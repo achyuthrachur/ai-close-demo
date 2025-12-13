@@ -48,8 +48,8 @@ Respond in JSON with the shape:
 }
 `;
 
-  let narrative = '';
-  let items: { jeId: string; summary: string; details: string }[] = [];
+let narrative = '';
+let items: { jeId: string; summary: string; details: string; nextSteps?: string[] }[] = [];
 
   try {
     const aiText = await callChatModel(prompt);
