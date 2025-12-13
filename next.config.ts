@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  experimental: {
+    // Helps local builds fetch fonts when corporate TLS interception is present.
+    turbopackUseSystemTlsCerts: true,
+  },
 };
 
 export default nextConfig;
