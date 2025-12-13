@@ -147,7 +147,8 @@ export const MonthCloseOverview = () => {
           <>
             <div className="mt-4 flex items-end gap-3 h-36">
               {trend.map((point, idx) => {
-                const height = Math.min(100, Math.max(10, point.score));
+                const maxScore = Math.max(...trend.map((t) => t.score), 1);
+                const height = Math.min(100, Math.max(10, (point.score / maxScore) * 100));
                 return (
                   <div key={idx} className="flex-1">
                     <div
@@ -163,38 +164,50 @@ export const MonthCloseOverview = () => {
             <div className="mt-6 grid md:grid-cols-2 gap-4">
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted mb-1">JE volume vs flagged</div>
-                <div className="flex items-end gap-3 h-36">
-                  {monthlyStats.map((stat) => (
-                    <div key={stat.period} className="flex-1 space-y-1">
-                      <div className="w-full bg-border/50 rounded-full h-1.5">
-                        <div
-                          className="bg-accent-strong h-1.5 rounded-full"
-                          style={{ width: `${Math.min(100, (stat.flagged / Math.max(1, stat.totalEntries)) * 100)}%` }}
-                          title={`${stat.flagged} flagged of ${stat.totalEntries}`}
-                        />
+                {monthlyStats.length === 0 ? (
+                  <p className="text-sm text-muted">No data available.</p>
+                ) : (
+                  <div className="flex items-end gap-3 h-36">
+                    {monthlyStats.map((stat) => (
+                      <div key={stat.period} className="flex-1 space-y-1">
+                        <div className="w-full bg-border/50 rounded-full h-2">
+                          <div
+                            className="bg-accent-strong h-2 rounded-full"
+                            style={{ width: `${Math.min(100, (stat.flagged / Math.max(1, stat.totalEntries)) * 100)}%` }}
+                            title={`${stat.flagged} flagged of ${stat.totalEntries}`}
+                          />
+                        </div>
+                        <div className="text-xs text-muted text-center">
+                          {stat.period}
+                          <div className="text-[11px]">{stat.totalEntries} entries / {stat.flagged} flagged</div>
+                        </div>
                       </div>
-                      <div className="text-xs text-muted text-center">
-                        {stat.period}
-                        <div className="text-[11px]">{stat.totalEntries} entries / {stat.flagged} flagged</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted mb-1">High-risk JEs</div>
-                <div className="flex items-end gap-3 h-36">
-                  {monthlyStats.map((stat) => (
-                    <div key={stat.period} className="flex-1">
-                      <div
-                        className="w-full rounded-t-md bg-rose-400"
-                        style={{ height: `${Math.min(100, Math.max(8, (stat.highRisk / Math.max(1, stat.totalEntries)) * 120))}%` }}
-                        title={`${stat.highRisk} high-risk of ${stat.totalEntries}`}
-                      />
-                      <div className="text-xs text-muted text-center mt-1">{stat.period}</div>
-                    </div>
-                  ))}
-                </div>
+                {monthlyStats.length === 0 ? (
+                  <p className="text-sm text-muted">No data available.</p>
+                ) : (
+                  <div className="flex items-end gap-3 h-36">
+                    {monthlyStats.map((stat) => {
+                      const maxHigh = Math.max(...monthlyStats.map((s) => s.highRisk), 1);
+                      const height = Math.min(100, Math.max(10, (stat.highRisk / maxHigh) * 100));
+                      return (
+                        <div key={stat.period} className="flex-1">
+                          <div
+                            className="w-full rounded-t-md bg-rose-400"
+                            style={{ height: `${height}%` }}
+                            title={`${stat.highRisk} high-risk of ${stat.totalEntries}`}
+                          />
+                          <div className="text-xs text-muted text-center mt-1">{stat.period}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </>

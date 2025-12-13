@@ -12,6 +12,7 @@ export async function POST(req: Request) {
   const flagged: FlaggedEntry[] = body.flagged ?? [];
   const date: string = body.date ?? '';
   const summary = body.summary;
+  const decisions: { jeId: string; status: string }[] = body.decisions ?? [];
 
   const categories: Record<
     JEFlag,
@@ -35,6 +36,7 @@ export async function POST(req: Request) {
     .filter((f) => f.flags.length)
     .forEach((f) => {
       const net = f.entry.debit - f.entry.credit;
+      const decision = decisions.find((d) => d.jeId === f.entry.jeId)?.status ?? 'PENDING';
       f.flags.forEach((flag) => {
         const bucket = categories[flag];
         bucket.jeIds.push(f.entry.jeId);
@@ -44,7 +46,8 @@ export async function POST(req: Request) {
           amount: net,
           description: f.entry.description,
           context: f.context,
-        });
+          decision,
+        } as any);
       });
     });
 
@@ -73,7 +76,7 @@ Respond in JSON with the shape:
 {
   "narrative": "overall 2-3 sentence narrative summarizing the risks and themes",
   "categories": [
-    { "flag": "DUPLICATE", "summary": "theme", "details": "1-2 sentences describing why flagged and referencing JE IDs", "nextSteps": ["short remediation step 1", "step 2"], "jeIds": ["...","..."] }
+    { "flag": "DUPLICATE", "summary": "theme", "details": "1-2 sentences describing why flagged and referencing JE IDs and decisions", "nextSteps": ["short remediation step 1", "step 2"], "jeIds": ["...","..."] }
   ]
 }
 `;

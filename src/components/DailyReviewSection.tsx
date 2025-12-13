@@ -5,7 +5,7 @@ import { journalEntries } from '@/data/journalEntries';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { flagEntriesForDate, flagEntriesForPeriod, flagEntriesForRange, uniquePostingDates } from '@/lib/journal';
 import { JEFlag } from '@/types';
-import { useCloseProgress } from './CloseProgressProvider';
+import { JeDecision, useCloseProgress } from './CloseProgressProvider';
 
 type AiExplanation = {
   jeId: string;
@@ -47,7 +47,7 @@ export const DailyReviewSection = () => {
   const [page, setPage] = useState(0);
   const [aiResponse, setAiResponse] = useState<AiResponse | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
-  const { markDayReviewed, markDayExplained, getJeAiResponse, setJeAiResponse } = useCloseProgress();
+  const { markDayReviewed, markDayExplained, getJeAiResponse, setJeAiResponse, getDecision, setDecision } = useCloseProgress();
 
   const computeFlags = () => {
     if (mode === 'DAY') return flagEntriesForDate(selected);
@@ -61,6 +61,13 @@ export const DailyReviewSection = () => {
   };
 
   const { flaggedEntries, summary } = useMemo(computeFlags, [selected, mode]);
+  const decisions = useMemo(() => {
+    const map = new Map<string, JeDecision>();
+    flaggedEntries.forEach((f) => {
+      map.set(f.entry.jeId, getDecision(f.entry.jeId));
+    });
+    return map;
+  }, [flaggedEntries, getDecision]);
 
   useEffect(() => {
     const opts = mode === 'DAY' ? dates : mode === 'WEEK' ? weeks : months;
@@ -77,14 +84,30 @@ export const DailyReviewSection = () => {
   }, [selected, mode, markDayReviewed, getJeAiResponse]);
 
   const filtered = useMemo(() => {
-    if (filter === 'ALL') return flaggedEntries;
-    if (filter === 'FLAGGED') return flaggedEntries.filter((f) => f.flags.length);
-    return flaggedEntries.filter((f) => f.risk === 'HIGH');
-  }, [filter, flaggedEntries]);
+    const base = flaggedEntries.map((f) => ({
+      ...f,
+      decision: decisions.get(f.entry.jeId) ?? 'PENDING',
+    }));
+    let subset = base;
+    if (filter === 'FLAGGED') subset = base.filter((f) => f.flags.length);
+    if (filter === 'HIGH') subset = base.filter((f) => f.risk === 'HIGH');
+    return subset;
+  }, [filter, flaggedEntries, decisions]);
 
   const pageSize = 50;
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = filtered.slice(page * pageSize, page * pageSize + pageSize);
+
+  const decisionCounts = useMemo(() => {
+    return filtered.reduce(
+      (acc, f) => {
+        const decision = f.decision as JeDecision;
+        acc[decision] += 1;
+        return acc;
+      },
+      { PENDING: 0, IGNORED: 0, ESCALATED: 0 }
+    );
+  }, [filtered]);
 
   const triggerAi = async () => {
     const payload = {
@@ -92,6 +115,7 @@ export const DailyReviewSection = () => {
       selection: selected,
       flagged: flaggedEntries.filter((f) => f.flags.length),
       summary,
+      decisions: Array.from(decisions.entries()).map(([jeId, status]) => ({ jeId, status })),
     };
     setLoadingAi(true);
     try {
@@ -199,6 +223,8 @@ export const DailyReviewSection = () => {
           value={summary.flaggedCounts.DUPLICATE}
           caption={`${summary.flaggedCounts.UNUSUAL_AMOUNT} unusual | ${summary.flaggedCounts.REVERSAL_ISSUE} reversal`}
         />
+        <SummaryTile label="Escalated" value={decisionCounts.ESCALATED} caption="Marked for review" />
+        <SummaryTile label="Ignored" value={decisionCounts.IGNORED} caption="Dismissed items" />
       </div>
 
       <div className="flex flex-wrap gap-3 items-center mt-6">
@@ -255,7 +281,42 @@ export const DailyReviewSection = () => {
                         {chipForFlag(flag)}
                       </span>
                     ))}
+                    {row.decision !== 'PENDING' && (
+                      <span
+                        className={`chip ${
+                          row.decision === 'ESCALATED'
+                            ? 'bg-rose-100 text-rose-800 border-rose-300'
+                            : 'bg-slate-200 text-slate-800 border-slate-300'
+                        }`}
+                      >
+                        {row.decision === 'ESCALATED' ? 'Escalated' : 'Ignored'}
+                      </span>
+                    )}
                   </div>
+                  {row.flags.length > 0 && (
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        className="px-2 py-1 rounded border border-border text-xs hover:bg-border/60"
+                        onClick={() => setDecision(row.entry.jeId, 'ESCALATED')}
+                      >
+                        Escalate
+                      </button>
+                      <button
+                        className="px-2 py-1 rounded border border-border text-xs hover:bg-border/60"
+                        onClick={() => setDecision(row.entry.jeId, 'IGNORED')}
+                      >
+                        Ignore
+                      </button>
+                      {row.decision !== 'PENDING' && (
+                        <button
+                          className="px-2 py-1 rounded border border-border text-xs hover:bg-border/60"
+                          onClick={() => setDecision(row.entry.jeId, 'PENDING')}
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
