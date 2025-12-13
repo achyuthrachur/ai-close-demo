@@ -112,6 +112,21 @@ export const DailyReviewSection = () => {
   }, [filtered]);
 
   const triggerAi = async () => {
+    const scopeDates =
+      mode === 'DAY'
+        ? [selected]
+        : mode === 'WEEK'
+        ? (() => {
+            const startDate = new Date(selected);
+            const end = new Date(selected);
+            end.setDate(end.getDate() + 6);
+            return dates.filter((d) => {
+              const t = new Date(d).getTime();
+              return t >= startDate.getTime() && t <= end.getTime();
+            });
+          })()
+        : dates.filter((d) => d.startsWith(selected));
+
     const payload = {
       scope: mode,
       selection: selected,
@@ -129,7 +144,11 @@ export const DailyReviewSection = () => {
       const json = await res.json();
       setAiResponse(json);
       setJeAiResponse(`${mode}:${selected}`, json);
-      if (mode === 'DAY') markDayExplained(selected);
+      // Mark all scope dates as reviewed and explained when running a scoped AI summary.
+      scopeDates.forEach((d) => {
+        markDayReviewed(d);
+        markDayExplained(d);
+      });
     } catch (err) {
       setAiResponse({
         explanations: [],

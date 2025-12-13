@@ -58,7 +58,7 @@ export const MonthCloseOverview = () => {
       const cands = buildAccrualCandidates(period);
       const flags = flagEntriesForPeriod(period);
       const ov = computeCloseOverview(dates, cands, state, flags.flaggedEntries, decisions);
-      return { period, score: ov.readinessScore };
+      return { period, readiness: ov.readinessScore, remediation: ov.remediationScore };
     });
   }
 
@@ -152,18 +152,20 @@ export const MonthCloseOverview = () => {
           <p className="text-sm text-muted mt-3">Trend will appear after data is loaded.</p>
         ) : (
           <>
-            <div className="mt-4 flex items-end gap-3 h-40 relative border border-border/60 rounded-lg p-3">
+            <div className="mt-4 flex items-end gap-3 h-48 relative border border-border/60 rounded-lg p-4">
               {trend.map((point, idx) => {
-                const maxScore = Math.max(...trend.map((t) => t.score), 1);
-                const height = Math.min(100, Math.max(10, (point.score / maxScore) * 100));
+                const maxReady = Math.max(...trend.map((t) => t.readiness), 1);
+                const height = Math.max(8, (point.readiness / maxReady) * 100);
                 return (
-                  <div key={idx} className="flex-1 flex flex-col justify-end items-center">
+                  <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-2">
                     <div
-                      className="w-6 rounded-t-md bg-accent-strong"
+                      className="w-8 rounded-t-md bg-accent-strong"
                       style={{ height: `${height}%` }}
-                      title={`${point.period}: ${point.score}% readiness`}
-                    />
-                    <div className="text-xs text-center text-muted mt-2">{point.period}</div>
+                      title={`${point.period}: ${point.readiness}% readiness`}
+                    >
+                      <div className="text-[11px] text-slate-900 font-semibold text-center leading-none pt-1">{point.readiness}%</div>
+                    </div>
+                    <div className="text-xs text-center text-muted">{point.period}</div>
                   </div>
                 );
               })}
@@ -174,13 +176,13 @@ export const MonthCloseOverview = () => {
                 {monthlyStats.length === 0 ? (
                   <p className="text-sm text-muted">No data available.</p>
                 ) : (
-                  <div className="flex items-end gap-3 h-32 border border-border/60 rounded-lg p-3">
+                  <div className="flex items-end gap-3 h-36 border border-border/60 rounded-lg p-3">
                     {monthlyStats.map((stat) => (
                       <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
-                        <div className="w-8 bg-border/50 rounded h-20 relative overflow-hidden">
+                        <div className="w-8 bg-border/50 rounded h-24 relative overflow-hidden">
                           <div
                             className="bg-accent-strong absolute bottom-0 left-0 right-0"
-                            style={{ height: `${Math.min(100, Math.max(5, (stat.flagged / Math.max(1, stat.totalEntries)) * 100))}%` }}
+                            style={{ height: `${Math.min(100, Math.max(8, (stat.flagged / Math.max(1, stat.totalEntries)) * 100))}%` }}
                             title={`${stat.flagged} flagged of ${stat.totalEntries}`}
                           />
                         </div>
@@ -198,10 +200,10 @@ export const MonthCloseOverview = () => {
                 {monthlyStats.length === 0 ? (
                   <p className="text-sm text-muted">No data available.</p>
                 ) : (
-                  <div className="flex items-end gap-3 h-32 border border-border/60 rounded-lg p-3">
+                  <div className="flex items-end gap-3 h-36 border border-border/60 rounded-lg p-3">
                     {monthlyStats.map((stat) => {
                       const maxHigh = Math.max(...monthlyStats.map((s) => s.highRisk), 1);
-                      const height = Math.min(100, Math.max(10, (stat.highRisk / maxHigh) * 100));
+                      const height = Math.min(100, Math.max(8, (stat.highRisk / maxHigh) * 100));
                       return (
                         <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
                           <div
@@ -221,12 +223,12 @@ export const MonthCloseOverview = () => {
                 {monthlyStats.length === 0 ? (
                   <p className="text-sm text-muted">No data available.</p>
                 ) : (
-                  <div className="flex items-end gap-3 h-32 border border-border/60 rounded-lg p-3">
+                  <div className="flex items-end gap-3 h-36 border border-border/60 rounded-lg p-3">
                     {monthlyStats.map((stat) => (
                       <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
                         <div
                           className="w-8 rounded-t-md bg-emerald-400"
-                          style={{ height: `${Math.min(100, Math.max(10, stat.remediation))}%` }}
+                          style={{ height: `${Math.min(100, Math.max(8, stat.remediation))}%` }}
                           title={`${stat.remediation}% of flagged resolved`}
                         />
                         <div className="text-xs text-muted text-center mt-1">{stat.period}</div>
