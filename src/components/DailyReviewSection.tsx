@@ -47,7 +47,7 @@ export const DailyReviewSection = () => {
   const [page, setPage] = useState(0);
   const [aiResponse, setAiResponse] = useState<AiResponse | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
-  const { markDayReviewed, markDayExplained } = useCloseProgress();
+  const { markDayReviewed, markDayExplained, getJeAiResponse, setJeAiResponse } = useCloseProgress();
 
   const computeFlags = () => {
     if (mode === 'DAY') return flagEntriesForDate(selected);
@@ -72,8 +72,9 @@ export const DailyReviewSection = () => {
   useEffect(() => {
     if (mode === 'DAY' && selected) markDayReviewed(selected);
     setPage(0);
-    setAiResponse(null);
-  }, [selected, mode, markDayReviewed]);
+    const cached = getJeAiResponse(`${mode}:${selected}`);
+    setAiResponse(cached ?? null);
+  }, [selected, mode, markDayReviewed, getJeAiResponse]);
 
   const filtered = useMemo(() => {
     if (filter === 'ALL') return flaggedEntries;
@@ -101,6 +102,7 @@ export const DailyReviewSection = () => {
       });
       const json = await res.json();
       setAiResponse(json);
+      setJeAiResponse(`${mode}:${selected}`, json);
       if (mode === 'DAY') markDayExplained(selected);
     } catch (err) {
       setAiResponse({
@@ -189,8 +191,7 @@ export const DailyReviewSection = () => {
         <SummaryTile
           label="Flagged %"
           value={`${summary.flaggedPercentage.toFixed(0)}%`}
-          caption={`${summary.flaggedCounts.DUPLICATE + summary.flaggedCounts.UNUSUAL_AMOUNT + summary.flaggedCounts.REVERSAL_ISSUE
-            } flagged`}
+          caption={`${summary.flaggedCounts.DUPLICATE + summary.flaggedCounts.UNUSUAL_AMOUNT + summary.flaggedCounts.REVERSAL_ISSUE} flagged`}
         />
         <SummaryTile label="High-risk" value={summary.highRiskCount} caption="Includes unusual amounts & reversals" />
         <SummaryTile
@@ -232,7 +233,7 @@ export const DailyReviewSection = () => {
                   <div className="font-medium">{row.entry.account}</div>
                   <div className="text-muted text-xs flex gap-2">
                     <span>{row.entry.costCenter}</span>
-                    <span>·</span>
+                    <span>-</span>
                     <span>{formatDate(row.entry.postingDate)}</span>
                   </div>
                 </td>
