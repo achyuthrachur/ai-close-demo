@@ -107,7 +107,7 @@ export const DailyReviewSection = () => {
         acc[decision] += 1;
         return acc;
       },
-      { PENDING: 0, IGNORED: 0, ESCALATED: 0 }
+      { PENDING: 0, IGNORED: 0, ESCALATED: 0, REMEDIATED: 0 }
     );
   }, [filtered]);
 
@@ -246,6 +246,7 @@ export const DailyReviewSection = () => {
         />
         <SummaryTile label="Escalated" value={decisionCounts.ESCALATED} caption="Marked for review" />
         <SummaryTile label="Ignored" value={decisionCounts.IGNORED} caption="Dismissed items" />
+        <SummaryTile label="Remediated" value={decisionCounts.REMEDIATED} caption="Cleared after review" />
       </div>
 
       <div className="flex flex-wrap gap-3 items-center mt-6">
@@ -327,6 +328,12 @@ export const DailyReviewSection = () => {
                         onClick={() => setDecision(row.entry.jeId, 'IGNORED')}
                       >
                         Ignore
+                      </button>
+                      <button
+                        className="px-2 py-1 rounded border border-border text-xs hover:bg-border/60"
+                        onClick={() => setDecision(row.entry.jeId, 'REMEDIATED')}
+                      >
+                        Remediated
                       </button>
                       {row.decision !== 'PENDING' && (
                         <button

@@ -8,7 +8,7 @@ type StoredAiResponse = {
   explanations: { jeId: string; summary: string; text: string }[];
 };
 
-export type JeDecision = 'PENDING' | 'IGNORED' | 'ESCALATED';
+export type JeDecision = 'PENDING' | 'IGNORED' | 'ESCALATED' | 'REMEDIATED';
 
 type CloseProgressContext = {
   progress: CloseProgress;

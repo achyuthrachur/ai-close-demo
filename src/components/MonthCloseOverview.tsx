@@ -6,6 +6,7 @@ import { buildAccrualCandidates } from '@/lib/accruals';
 import { computeCloseOverview } from '@/lib/overview';
 import { flagEntriesForPeriod, uniquePostingDates } from '@/lib/journal';
 import { useCloseProgress } from './CloseProgressProvider';
+import { BarBlock } from './BarBlock';
 
 export const MonthCloseOverview = () => {
   const allDates = useMemo(() => uniquePostingDates(), []);
@@ -38,8 +39,15 @@ export const MonthCloseOverview = () => {
         const highRisk = flags.flaggedEntries.filter((f) => f.risk === 'HIGH').length;
         const decided = flags.flaggedEntries.filter((f) => {
           const status = decisions.get(f.entry.jeId);
-          return f.flags.length && (status === 'ESCALATED' || status === 'IGNORED');
+          return f.flags.length && (status === 'ESCALATED' || status === 'IGNORED' || status === 'REMEDIATED');
         }).length;
+        const perFlag = flags.flaggedEntries.reduce(
+          (acc, f) => {
+            f.flags.forEach((flag) => acc[flag]++);
+            return acc;
+          },
+          { DUPLICATE: 0, UNUSUAL_AMOUNT: 0, REVERSAL_ISSUE: 0 }
+        );
         return {
           period,
           totalEntries,
@@ -47,6 +55,7 @@ export const MonthCloseOverview = () => {
           highRisk,
           remediation: flagged ? Math.round((decided / flagged) * 100) : 100,
           readiness: totalEntries ? Math.round(((totalEntries - flagged) / totalEntries) * 100) : 0,
+          perFlag,
         };
       }),
     [months, decisions]
@@ -152,23 +161,45 @@ export const MonthCloseOverview = () => {
           <p className="text-sm text-muted mt-3">Trend will appear after data is loaded.</p>
         ) : (
           <>
-            <div className="mt-4 flex items-end gap-3 h-48 relative border border-border/60 rounded-lg p-4">
-              {trend.map((point, idx) => {
-                const maxReady = Math.max(...trend.map((t) => t.readiness), 1);
-                const height = Math.max(8, (point.readiness / maxReady) * 100);
-                return (
-                  <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-2">
-                    <div
-                      className="w-8 rounded-t-md bg-accent-strong"
-                      style={{ height: `${height}%` }}
-                      title={`${point.period}: ${point.readiness}% readiness`}
-                    >
-                      <div className="text-[11px] text-slate-900 font-semibold text-center leading-none pt-1">{point.readiness}%</div>
+            <div className="mt-4 grid md:grid-cols-2 gap-4">
+              <div className="flex items-end gap-3 h-56 relative border border-border/60 rounded-lg p-4">
+                {trend.map((point, idx) => {
+                  const maxReady = Math.max(...trend.map((t) => t.readiness), 1);
+                  const height = Math.max(12, (point.readiness / maxReady) * 100);
+                  return (
+                    <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-2">
+                      <div
+                        className="w-10 rounded-t-md bg-accent-strong"
+                        style={{ height: `${height}%` }}
+                        title={`${point.period}: ${point.readiness}% readiness`}
+                      >
+                        <div className="text-[11px] text-slate-900 font-semibold text-center leading-none pt-1">
+                          {point.readiness}%
+                        </div>
+                      </div>
+                      <div className="text-xs text-center text-muted">{point.period}</div>
                     </div>
-                    <div className="text-xs text-center text-muted">{point.period}</div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+              <div className="flex items-end gap-3 h-56 relative border border-border/60 rounded-lg p-4">
+                {monthlyStats.map((stat, idx) => {
+                  const maxFlag = Math.max(
+                    ...monthlyStats.map((s) => Math.max(s.perFlag.DUPLICATE, s.perFlag.UNUSUAL_AMOUNT, s.perFlag.REVERSAL_ISSUE)),
+                    1
+                  );
+                  return (
+                    <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-2">
+                      <div className="w-12 flex flex-col gap-1">
+                        <BarBlock value={stat.perFlag.DUPLICATE} max={maxFlag} color="bg-amber-400" label="Dup" />
+                        <BarBlock value={stat.perFlag.UNUSUAL_AMOUNT} max={maxFlag} color="bg-rose-400" label="Unusual" />
+                        <BarBlock value={stat.perFlag.REVERSAL_ISSUE} max={maxFlag} color="bg-purple-400" label="Reversal" />
+                      </div>
+                      <div className="text-xs text-center text-muted">{stat.period}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             <div className="mt-6 grid md:grid-cols-3 gap-4">
               <div>

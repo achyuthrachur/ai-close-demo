@@ -42,7 +42,7 @@ export const computeCloseOverview = (
   const cleanCount = totalEntries - flaggedCount;
   const decidedCount = flaggedEntries.filter((f) => {
     const status = decisions.get(f.entry.jeId);
-    return f.flags.length && (status === 'ESCALATED' || status === 'IGNORED');
+    return f.flags.length && (status === 'ESCALATED' || status === 'IGNORED' || status === 'REMEDIATED');
   }).length;
 
   const readinessScore = totalEntries ? Math.round((cleanCount / totalEntries) * 100) : 0;
