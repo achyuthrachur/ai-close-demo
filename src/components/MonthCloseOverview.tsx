@@ -17,6 +17,16 @@ export const MonthCloseOverview = () => {
   const overview = useMemo(() => computeCloseOverview(periodDates, candidates, progress), [periodDates, candidates, progress]);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [trend, setTrend] = useState(() => buildTrend(overview.readinessScore));
+
+  function buildTrend(score: number) {
+    const points = Array.from({ length: 8 }).map((_, idx) => {
+      const noise = score + (Math.random() * 14 - 7) + idx * 1.5;
+      const clamped = Math.max(5, Math.min(100, noise));
+      return Math.round(clamped);
+    });
+    return points;
+  }
 
   const triggerSummary = async () => {
     setLoading(true);
@@ -35,6 +45,8 @@ export const MonthCloseOverview = () => {
       setLoading(false);
     }
   };
+
+  const refreshVisuals = () => setTrend(buildTrend(overview.readinessScore));
 
   return (
     <section className="glass rounded-2xl p-6 border border-border/80">
@@ -75,6 +87,37 @@ export const MonthCloseOverview = () => {
           <div className="text-xs text-muted">
             Weighted blend of JE review (55%) and accrual handling (45%). Deterministic and reproducible.
           </div>
+        </div>
+      </div>
+
+      <div className="glass rounded-xl p-4 border border-border/60 mt-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-muted">Live visuals (demo)</div>
+            <div className="text-sm text-muted">Refresh to simulate dynamic updates as reviews progress.</div>
+          </div>
+          <button
+            onClick={refreshVisuals}
+            className="px-3 py-2 rounded-lg border border-border text-sm font-semibold hover:bg-border/60"
+          >
+            Refresh visuals
+          </button>
+        </div>
+        <div className="mt-4 flex items-end gap-2 h-32">
+          {trend.map((val, idx) => (
+            <div key={idx} className="flex-1">
+              <div
+                className="w-full rounded-t-md bg-accent-strong"
+                style={{ height: `${val}%` }}
+                title={`${val}% readiness`}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-between text-xs text-muted mt-1">
+          {trend.map((_, idx) => (
+            <span key={idx}>T{idx + 1}</span>
+          ))}
         </div>
       </div>
 

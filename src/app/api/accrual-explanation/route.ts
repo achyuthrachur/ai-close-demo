@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
   const prompt = `
 You create a concise AI explanation for an accrual recommendation. Use only the data provided.
-Respond in JSON: { "explanation": "2 sentences", "memo": "short JE memo" }.
+Respond in JSON: { "explanation": "2-3 sentences", "memo": "short JE memo", "nextSteps": ["bullet remediation", "..."] }.
 
 Vendor: ${candidate.vendorName}
 Cadence: ${candidate.cadence}
@@ -30,12 +30,14 @@ ${candidate.recentInvoices
 
   let explanation = '';
   let memo = '';
+  let nextSteps: string[] = [];
 
   try {
     const aiText = await callChatModel(prompt);
     const parsed = cleanJson(aiText);
     explanation = parsed.explanation ?? '';
     memo = parsed.memo ?? '';
+    nextSteps = parsed.nextSteps ?? [];
   } catch (err) {
     console.error('AI accrual explanation error', err);
     explanation = 'AI unavailable. Deterministic accrual guidance shown.';
@@ -45,5 +47,6 @@ ${candidate.recentInvoices
     vendorId: candidate.vendorId,
     explanation,
     memo,
+    nextSteps,
   });
 }

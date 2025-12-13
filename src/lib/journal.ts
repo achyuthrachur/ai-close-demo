@@ -73,18 +73,24 @@ const determineRisk = (flags: JEFlag[]): RiskLevel => {
   return 'MEDIUM';
 };
 
-export const flagEntriesForDate = (date: string) => {
-  const daily = journalEntries.filter((je) => je.postingDate === date);
-  const period = daily[0]?.period ?? '';
-  const dupes = period ? duplicateMap(period) : new Map<string, JournalEntry[]>();
+const buildDuplicateMapForPeriods = () => {
+  const periods = Array.from(new Set(journalEntries.map((je) => je.period)));
+  const map = new Map<string, Map<string, JournalEntry[]>>();
+  periods.forEach((p) => map.set(p, duplicateMap(p)));
+  return map;
+};
 
-  const flagged: FlaggedEntry[] = daily.map((entry) => {
+const globalDuplicateMaps = buildDuplicateMapForPeriods();
+
+const flagEntries = (entries: JournalEntry[]) => {
+  const flagged: FlaggedEntry[] = entries.map((entry) => {
     const flags: JEFlag[] = [];
     const context: FlaggedEntry['context'] = {};
 
     // Duplicate detection
     const dupKey = `${entry.account}|${entry.costCenter}|${Math.round(magnitude(entry))}`;
-    const duplicates = dupes.get(dupKey) ?? [];
+    const periodMap = globalDuplicateMaps.get(entry.period) ?? new Map<string, JournalEntry[]>();
+    const duplicates = periodMap.get(dupKey) ?? [];
     if (duplicates.length > 1) {
       flags.push('DUPLICATE');
       context.duplicateCount = duplicates.length;
@@ -146,6 +152,20 @@ export const flagEntriesForDate = (date: string) => {
 
   return { flaggedEntries: flagged, summary };
 };
+
+export const flagEntriesForDate = (date: string) => flagEntries(journalEntries.filter((je) => je.postingDate === date));
+
+export const flagEntriesForRange = (start: string, end: string) => {
+  const startDate = new Date(start).getTime();
+  const endDate = new Date(end).getTime();
+  const subset = journalEntries.filter((je) => {
+    const t = new Date(je.postingDate).getTime();
+    return t >= startDate && t <= endDate;
+  });
+  return flagEntries(subset);
+};
+
+export const flagEntriesForPeriod = (period: string) => flagEntries(journalEntries.filter((je) => je.period === period));
 
 export const uniquePostingDates = () => {
   const dates = Array.from(new Set(journalEntries.map((je) => je.postingDate)));

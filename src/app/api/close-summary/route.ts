@@ -11,7 +11,7 @@ export async function POST(req: Request) {
 
   const prompt = `
 Generate a concise controller-friendly month-end close summary. Use only provided numbers; no new figures.
-Respond in JSON: { "summary": "3-4 sentence narrative" }.
+Respond in JSON: { "summary": "3-4 sentence narrative with key observations and next steps" }.
 
 Period: ${period}
 Readiness score: ${overview.readinessScore}%

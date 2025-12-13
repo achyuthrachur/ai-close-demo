@@ -69,14 +69,14 @@ const addEntry = (
 
 const generateJournalEntries = (): JournalEntry[] => {
   const entries: JournalEntry[] = [];
-  const start = new Date('2025-05-20');
+  const start = new Date('2025-04-15');
 
-  for (let i = 0; i < 45; i += 1) {
+  for (let i = 0; i < 90; i += 1) {
     const date = new Date(start);
     date.setDate(start.getDate() + i);
 
-    // Generate a set of base entries per day.
-    profiles.slice(0, 6).forEach((profile) => {
+    // Generate a set of base entries per day (all profiles for richer volume).
+    profiles.forEach((profile) => {
       const amount = amountForProfile(profile);
       addEntry(entries, date, profile, amount, {
         description: `${profile.account} - routine`,
@@ -90,6 +90,17 @@ const generateJournalEntries = (): JournalEntry[] => {
       addEntry(entries, date, profile, amount, {
         description: 'Monthly true-up',
         credit: amount,
+      });
+    }
+
+    // Sprinkle extra random adjustments to increase dataset size.
+    if (rand() > 0.6) {
+      const profile = pick(profiles);
+      const amount = roundToNearest(amountForProfile(profile) * (0.5 + rand()));
+      addEntry(entries, date, profile, amount, {
+        description: 'Ad-hoc adjustment',
+        credit: rand() > 0.5 ? amount : 0,
+        debit: rand() > 0.5 ? amount : 0,
       });
     }
   }

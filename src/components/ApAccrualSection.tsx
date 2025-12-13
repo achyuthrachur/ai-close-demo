@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { accrualPolicy } from '@/data/config';
 import { buildAccrualCandidates } from '@/lib/accruals';
 import { formatCurrency, formatDate } from '@/lib/format';
@@ -11,6 +11,7 @@ type MemoResponse = {
   vendorId: string;
   explanation: string;
   memo: string;
+  nextSteps?: string[];
 };
 
 export const ApAccrualSection = () => {
@@ -23,6 +24,12 @@ export const ApAccrualSection = () => {
 
   const visible = filterMissing ? candidates.filter((c) => c.expectedMissing) : candidates;
   const selected = visible.find((c) => c.vendorId === selectedVendorId) ?? visible[0];
+
+  useEffect(() => {
+    if (!selected && visible[0]) {
+      setSelectedVendorId(visible[0].vendorId);
+    }
+  }, [visible, selected]);
 
   const requestMemo = async (candidate: AccrualCandidate) => {
     setLoadingVendor(candidate.vendorId);
@@ -43,6 +50,7 @@ export const ApAccrualSection = () => {
           vendorId: candidate.vendorId,
           explanation: 'AI provider not reachable; deterministic suggestion shown instead.',
           memo: '',
+          nextSteps: ['Review vendor PO/contract manually', 'Confirm timing with AP'],
         },
       }));
     } finally {
@@ -172,6 +180,16 @@ export const ApAccrualSection = () => {
                   <div className="mt-2 text-muted">
                     <span className="font-semibold text-foreground">JE Memo: </span>
                     {aiMemos[selected.vendorId].memo}
+                  </div>
+                )}
+                {!!aiMemos[selected.vendorId].nextSteps?.length && (
+                  <div className="mt-2">
+                    <div className="text-xs uppercase tracking-wide text-accent-strong">Next steps</div>
+                    <ul className="list-disc list-inside text-muted">
+                      {aiMemos[selected.vendorId].nextSteps!.map((step, idx) => (
+                        <li key={idx}>{step}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>

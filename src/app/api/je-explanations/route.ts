@@ -27,9 +27,9 @@ export async function POST(req: Request) {
   });
 
   const prompt = `
-You are assisting a controller reviewing journal entry flags for ${date}. 
+You are assisting a controller reviewing journal entry flags for ${date}.
 Only use the provided data; do not invent new amounts.
-Summaries should be concise and business-friendly.
+Provide remediation-focused guidance.
 
 Daily context:
 - Total entries: ${summary?.totalEntries ?? 'n/a'}
@@ -41,9 +41,9 @@ ${JSON.stringify(payload, null, 2)}
 
 Respond in JSON with the shape:
 {
-  "narrative": "overall 2-3 sentence narrative for the day",
+  "narrative": "overall 2-3 sentence narrative summarizing the risks and themes",
   "items": [
-    { "jeId": "...", "summary": "1 sentence theme", "details": "1-2 sentence guidance" }
+    { "jeId": "...", "summary": "1 sentence theme", "details": "1-2 sentences describing why flagged", "nextSteps": ["short remediation step 1", "step 2"] }
   ]
 }
 `;
@@ -71,6 +71,7 @@ Respond in JSON with the shape:
         details: `Flagged deterministically due to ${f.flags.join(' & ')}. Amount: ${Math.abs(
           f.entry.debit - f.entry.credit
         )}.`,
+        nextSteps: ['Review supporting docs', 'Confirm approval and reversal timing'],
       }));
   }
 
@@ -79,7 +80,7 @@ Respond in JSON with the shape:
     explanations: items.map((item) => ({
       jeId: item.jeId,
       summary: item.summary,
-      text: item.details,
+      text: `${item.details}${item.nextSteps?.length ? `\nNext steps: ${item.nextSteps.join('; ')}` : ''}`,
     })),
   });
 }

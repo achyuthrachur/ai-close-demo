@@ -49,7 +49,7 @@ const patterns: VendorPattern[] = [
 
 const buildInvoices = (): VendorInvoice[] => {
   const invoices: VendorInvoice[] = [];
-  const historyStart = periodToDate('2024-06');
+  const historyStart = periodToDate('2024-01');
   const historyEnd = periodToDate(currentPeriod, 25);
 
   const pushInvoice = (vendor: VendorProfile, date: Date, amount: number, status: 'PAID' | 'UNPAID' = 'PAID') => {
@@ -74,7 +74,7 @@ const buildInvoices = (): VendorInvoice[] => {
 
   vendorProfiles.forEach((vendor) => {
     const pattern = patterns.find((p) => p.vendorId === vendor.vendorId)!;
-    let cursor = new Date(historyStart);
+    const cursor = new Date(historyStart);
 
     while (cursor <= historyEnd) {
       const period = toPeriod(cursor);
@@ -96,11 +96,7 @@ const buildInvoices = (): VendorInvoice[] => {
       }
 
       // Advance cursor
-      if (pattern.cadence === 'Quarterly') {
-        cursor.setMonth(cursor.getMonth() + 1);
-      } else {
-        cursor.setMonth(cursor.getMonth() + 1);
-      }
+      cursor.setMonth(cursor.getMonth() + 1);
     }
   });
 

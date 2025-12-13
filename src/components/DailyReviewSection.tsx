@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { accrualPolicy } from '@/data/config';
+import { journalEntries } from '@/data/journalEntries';
 import { formatCurrency, formatDate } from '@/lib/format';
-import { flagEntriesForDate, uniquePostingDates } from '@/lib/journal';
+import { flagEntriesForDate, flagEntriesForPeriod, flagEntriesForRange, uniquePostingDates } from '@/lib/journal';
 import { JEFlag } from '@/types';
 import { useCloseProgress } from './CloseProgressProvider';
 
@@ -26,21 +27,54 @@ const riskColor = (risk: string) => {
 
 export const DailyReviewSection = () => {
   const dates = useMemo(() => uniquePostingDates().filter((d) => d.startsWith(accrualPolicy.currentPeriod)), []);
+  const months = useMemo(() => Array.from(new Set(journalEntries.map((je) => je.period))).sort(), []);
+  const weeks = useMemo(() => {
+    const weekStarts = new Set<string>();
+    dates.forEach((d) => {
+      const date = new Date(d);
+      const day = date.getDay();
+      const diff = date.getDate() - day + (day === 0 ? -6 : 1); // monday
+      const start = new Date(date);
+      start.setDate(diff);
+      weekStarts.add(start.toISOString().split('T')[0]);
+    });
+    return Array.from(weekStarts).sort();
+  }, [dates]);
+
   const latestDate = dates[dates.length - 1] ?? '';
-  const [selectedDate, setSelectedDate] = useState<string>(latestDate);
+  const [selected, setSelected] = useState<string>(latestDate);
+  const [mode, setMode] = useState<'DAY' | 'WEEK' | 'MONTH'>('DAY');
   const [filter, setFilter] = useState<'ALL' | 'FLAGGED' | 'HIGH'>('FLAGGED');
   const [page, setPage] = useState(0);
   const [aiResponse, setAiResponse] = useState<AiResponse | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
   const { markDayReviewed, markDayExplained } = useCloseProgress();
 
-  const { flaggedEntries, summary } = useMemo(() => flagEntriesForDate(selectedDate), [selectedDate]);
+  const computeFlags = () => {
+    if (mode === 'DAY') return flagEntriesForDate(selected);
+    if (mode === 'WEEK') {
+      const start = selected;
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      return flagEntriesForRange(start, end.toISOString().split('T')[0]);
+    }
+    return flagEntriesForPeriod(selected);
+  };
+
+  const { flaggedEntries, summary } = useMemo(computeFlags, [selected, mode]);
 
   useEffect(() => {
-    if (selectedDate) markDayReviewed(selectedDate);
+    const opts = mode === 'DAY' ? dates : mode === 'WEEK' ? weeks : months;
+    if (!opts.includes(selected) && opts.length) {
+      setSelected(opts[opts.length - 1]);
+    }
+  }, [mode, dates, weeks, months, selected]);
+
+  useEffect(() => {
+    if (mode === 'DAY' && selected) markDayReviewed(selected);
     setPage(0);
     setAiResponse(null);
-  }, [selectedDate, markDayReviewed]);
+  }, [selected, mode, markDayReviewed]);
 
   const filtered = useMemo(() => {
     if (filter === 'ALL') return flaggedEntries;
@@ -54,7 +88,8 @@ export const DailyReviewSection = () => {
 
   const triggerAi = async () => {
     const payload = {
-      date: selectedDate,
+      scope: mode,
+      selection: selected,
       flagged: flaggedEntries.filter((f) => f.flags.length),
       summary,
     };
@@ -67,7 +102,7 @@ export const DailyReviewSection = () => {
       });
       const json = await res.json();
       setAiResponse(json);
-      markDayExplained(selectedDate);
+      if (mode === 'DAY') markDayExplained(selected);
     } catch (err) {
       setAiResponse({
         explanations: [],
@@ -88,7 +123,7 @@ export const DailyReviewSection = () => {
     return map[flag];
   };
 
-  if (!selectedDate) {
+  if (!selected) {
     return (
       <section className="glass rounded-2xl p-6 border border-border/80">
         <p className="text-muted">No journal entry data available.</p>
@@ -96,24 +131,38 @@ export const DailyReviewSection = () => {
     );
   }
 
+  const optionsForMode = mode === 'DAY' ? dates : mode === 'WEEK' ? weeks : months;
+
   return (
     <section className="glass rounded-2xl p-6 border border-border/80">
       <div className="flex flex-wrap items-end gap-4 justify-between">
         <div>
-          <p className="text-sm text-muted uppercase tracking-wide">Daily JE Review</p>
+          <p className="text-sm text-muted uppercase tracking-wide">JE Review</p>
           <h2 className="text-2xl font-semibold">Spot anomalies before approvals</h2>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <label className="text-sm text-muted flex flex-col gap-1">
-            Date
+            View
             <select
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              value={mode}
+              onChange={(e) => setMode(e.target.value as 'DAY' | 'WEEK' | 'MONTH')}
               className="glass bg-card border border-border/70 rounded-lg px-3 py-2 text-foreground"
             >
-              {dates.map((d) => (
+              <option value="DAY">Daily</option>
+              <option value="WEEK">Weekly</option>
+              <option value="MONTH">Monthly</option>
+            </select>
+          </label>
+          <label className="text-sm text-muted flex flex-col gap-1">
+            {mode === 'DAY' ? 'Date' : mode === 'WEEK' ? 'Week of' : 'Month'}
+            <select
+              value={selected}
+              onChange={(e) => setSelected(e.target.value)}
+              className="glass bg-card border border-border/70 rounded-lg px-3 py-2 text-foreground"
+            >
+              {optionsForMode.map((d) => (
                 <option key={d} value={d}>
-                  {formatDate(d)}
+                  {mode === 'MONTH' ? d : formatDate(d)}
                 </option>
               ))}
             </select>
@@ -153,12 +202,12 @@ export const DailyReviewSection = () => {
         <button
           onClick={triggerAi}
           disabled={loadingAi || !flaggedEntries.some((f) => f.flags.length)}
-          className="rounded-lg bg-accent-strong/80 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-accent-strong transition disabled:opacity-60"
+          className="rounded-lg bg-accent-strong/80 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-strong transition disabled:opacity-60"
         >
           {loadingAi ? 'Requesting AI...' : 'Explain flags with AI'}
         </button>
         <span className="text-sm text-muted">
-          Deterministic flags drive the numbers. AI only explains and narrates.
+          Deterministic flags drive the numbers. AI summarizes and proposes next steps.
         </span>
       </div>
 
@@ -176,7 +225,7 @@ export const DailyReviewSection = () => {
           </thead>
           <tbody>
             {currentPage.map((row) => (
-              <tr key={row.entry.jeId} className="border-b border-border/60 hover:bg-white/5">
+              <tr key={row.entry.jeId} className="border-b border-border/60 hover:bg-border/20">
                 <td className="py-3 pr-3">
                   <div className="font-medium">{row.entry.account}</div>
                   <div className="text-muted text-xs flex gap-2">
@@ -234,8 +283,8 @@ export const DailyReviewSection = () => {
 
       {aiResponse?.dailyNarrative && (
         <div className="mt-6 p-4 rounded-xl border border-border/70 bg-accent-strong/10">
-          <div className="text-sm uppercase tracking-wide text-accent-strong mb-1">AI Daily Narrative</div>
-          <p className="text-sm text-foreground/90">{aiResponse.dailyNarrative}</p>
+          <div className="text-sm uppercase tracking-wide text-accent-strong mb-1">AI Narrative</div>
+          <p className="text-sm text-foreground/90 whitespace-pre-line">{aiResponse.dailyNarrative}</p>
         </div>
       )}
 
@@ -245,7 +294,7 @@ export const DailyReviewSection = () => {
             <div key={exp.jeId} className="glass p-4 rounded-xl border border-border/70">
               <div className="text-xs uppercase tracking-wide text-accent-strong mb-1">{exp.jeId}</div>
               <div className="font-semibold">{exp.summary}</div>
-              <p className="text-sm text-muted mt-2">{exp.text}</p>
+              <p className="text-sm text-muted mt-2 whitespace-pre-line">{exp.text}</p>
             </div>
           ))}
         </div>
