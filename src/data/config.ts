@@ -6,7 +6,7 @@ export const jeRules = {
 };
 
 export const accrualPolicy = {
-  currentPeriod: '2025-06',
+  currentPeriod: '2025-07',
   minimumInvoicesForCadence: 4,
   averageLastNInvoices: 3,
   monthlyGapToleranceDays: 7,

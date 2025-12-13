@@ -64,6 +64,9 @@ export const ApAccrualSection = () => {
         <div>
           <p className="text-sm text-muted uppercase tracking-wide">AP Accrual Co-pilot</p>
           <h2 className="text-2xl font-semibold">Surface missing invoices before month-end</h2>
+          <p className="text-sm text-muted mt-1">
+            Deterministic cadence detection and accrual math highlight expected-but-missing invoices; AI explains rationale and memos.
+          </p>
         </div>
         <div className="flex items-center gap-2 text-sm">
           <label className="flex items-center gap-2">

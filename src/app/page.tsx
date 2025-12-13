@@ -33,7 +33,7 @@ export default function Home() {
               <span className="chip bg-sky-100 text-sky-800 border-sky-300">AI narratives</span>
               <span className="chip bg-slate-200 text-slate-800 border-slate-300">Synthetic JSON data</span>
             </div>
-            <h1 className="text-4xl font-semibold mt-4">AI-augmented close co-pilot</h1>
+            <h1 className="text-4xl font-semibold mt-4">AI-Augmented Journal Entry</h1>
             <p className="text-lg text-muted mt-2 max-w-3xl">
               Explore a ready-to-demo experience that blends deterministic controls (flags, thresholds, accrual math) with AI
               explanations. Click below to load demo data.

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { accrualPolicy } from '@/data/config';
 import { journalEntries } from '@/data/journalEntries';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { flagEntriesForDate, flagEntriesForPeriod, flagEntriesForRange, uniquePostingDates } from '@/lib/journal';
@@ -26,7 +25,7 @@ const riskColor = (risk: string) => {
 };
 
 export const DailyReviewSection = () => {
-  const dates = useMemo(() => uniquePostingDates().filter((d) => d.startsWith(accrualPolicy.currentPeriod)), []);
+  const dates = useMemo(() => uniquePostingDates(), []);
   const months = useMemo(() => Array.from(new Set(journalEntries.map((je) => je.period))).sort(), []);
   const weeks = useMemo(() => {
     const weekStarts = new Set<string>();
@@ -139,6 +138,9 @@ export const DailyReviewSection = () => {
         <div>
           <p className="text-sm text-muted uppercase tracking-wide">JE Review</p>
           <h2 className="text-2xl font-semibold">Spot anomalies before approvals</h2>
+          <p className="text-sm text-muted mt-1">
+            Deterministic flags surface duplicates, unusual amounts, and reversal issues; AI narrates the why and suggests next actions.
+          </p>
         </div>
         <div className="flex flex-wrap gap-3">
           <label className="text-sm text-muted flex flex-col gap-1">

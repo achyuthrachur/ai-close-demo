@@ -16,7 +16,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'AI Close Co-pilot',
+  title: 'AI-Augmented Journal Entry',
   description: 'Demo app for AI-assisted JE review, accruals, and month-end readiness.',
 };
 

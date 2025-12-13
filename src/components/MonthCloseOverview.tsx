@@ -8,24 +8,30 @@ import { uniquePostingDates } from '@/lib/journal';
 import { useCloseProgress } from './CloseProgressProvider';
 
 export const MonthCloseOverview = () => {
-  const periodDates = useMemo(
-    () => uniquePostingDates().filter((d) => d.startsWith(accrualPolicy.currentPeriod)),
-    []
+  const allDates = useMemo(() => uniquePostingDates(), []);
+  const months = useMemo(
+    () =>
+      Array.from(new Set(allDates.map((d) => d.slice(0, 7))))
+        .filter((p) => ['2025-04', '2025-05', '2025-06', '2025-07'].includes(p))
+        .sort(),
+    [allDates]
   );
-  const candidates = useMemo(() => buildAccrualCandidates(accrualPolicy.currentPeriod), []);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>(accrualPolicy.currentPeriod);
+  const periodDates = useMemo(() => allDates.filter((d) => d.startsWith(selectedPeriod)), [allDates, selectedPeriod]);
+  const candidates = useMemo(() => buildAccrualCandidates(selectedPeriod), [selectedPeriod]);
   const { progress } = useCloseProgress();
   const overview = useMemo(() => computeCloseOverview(periodDates, candidates, progress), [periodDates, candidates, progress]);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [trend, setTrend] = useState(() => buildTrend(overview.readinessScore));
+  const [trend, setTrend] = useState(() => buildTrendAcrossMonths(months, progress));
 
-  function buildTrend(score: number) {
-    const points = Array.from({ length: 8 }).map((_, idx) => {
-      const noise = score + (Math.random() * 14 - 7) + idx * 1.5;
-      const clamped = Math.max(5, Math.min(100, noise));
-      return Math.round(clamped);
+  function buildTrendAcrossMonths(periods: string[], state: typeof progress) {
+    return periods.map((period) => {
+      const dates = allDates.filter((d) => d.startsWith(period));
+      const cands = buildAccrualCandidates(period);
+      const ov = computeCloseOverview(dates, cands, state);
+      return { period, score: ov.readinessScore };
     });
-    return points;
   }
 
   const triggerSummary = async () => {
@@ -34,7 +40,7 @@ export const MonthCloseOverview = () => {
       const res = await fetch('/api/close-summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ overview, period: accrualPolicy.currentPeriod }),
+        body: JSON.stringify({ overview, period: selectedPeriod, monthlyTrend: trend }),
       });
       const json = await res.json();
       setAiSummary(json.summary);
@@ -46,22 +52,41 @@ export const MonthCloseOverview = () => {
     }
   };
 
-  const refreshVisuals = () => setTrend(buildTrend(overview.readinessScore));
+  const refreshVisuals = () => setTrend(buildTrendAcrossMonths(months, progress));
 
   return (
     <section className="glass rounded-2xl p-6 border border-border/80">
       <div className="flex flex-wrap items-end gap-4 justify-between">
         <div>
           <p className="text-sm text-muted uppercase tracking-wide">Month-end overview</p>
-          <h2 className="text-2xl font-semibold">Close readiness for {accrualPolicy.currentPeriod}</h2>
+          <h2 className="text-2xl font-semibold">Close readiness</h2>
+          <p className="text-sm text-muted mt-1">
+            Pulls JE review and accrual progress into one readiness score, shows month-to-month trends, and lets AI narrate what to do next.
+          </p>
         </div>
-        <button
-          onClick={triggerSummary}
-          className="bg-accent-strong/80 text-slate-900 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-accent-strong disabled:opacity-60"
-          disabled={loading}
-        >
-          {loading ? 'Generating…' : 'Generate AI month-end summary'}
-        </button>
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-muted flex flex-col gap-1">
+            Period
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="glass bg-card border border-border/70 rounded-lg px-3 py-2 text-foreground"
+            >
+              {months.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            onClick={triggerSummary}
+            className="bg-accent-strong/80 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-accent-strong disabled:opacity-60"
+            disabled={loading}
+          >
+            {loading ? 'Generating…' : 'Generate AI month-end summary'}
+          </button>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-4 mt-6">
@@ -93,8 +118,8 @@ export const MonthCloseOverview = () => {
       <div className="glass rounded-xl p-4 border border-border/60 mt-4">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-xs uppercase tracking-wide text-muted">Live visuals (demo)</div>
-            <div className="text-sm text-muted">Refresh to simulate dynamic updates as reviews progress.</div>
+            <div className="text-xs uppercase tracking-wide text-muted">Monthly trend</div>
+            <div className="text-sm text-muted">Readiness trend across recent months.</div>
           </div>
           <button
             onClick={refreshVisuals}
@@ -103,20 +128,16 @@ export const MonthCloseOverview = () => {
             Refresh visuals
           </button>
         </div>
-        <div className="mt-4 flex items-end gap-2 h-32">
-          {trend.map((val, idx) => (
+        <div className="mt-4 flex items-end gap-3 h-36">
+          {trend.map((point, idx) => (
             <div key={idx} className="flex-1">
               <div
                 className="w-full rounded-t-md bg-accent-strong"
-                style={{ height: `${val}%` }}
-                title={`${val}% readiness`}
+                style={{ height: `${point.score}%` }}
+                title={`${point.period}: ${point.score}% readiness`}
               />
+              <div className="text-xs text-center text-muted mt-1">{point.period}</div>
             </div>
-          ))}
-        </div>
-        <div className="flex justify-between text-xs text-muted mt-1">
-          {trend.map((_, idx) => (
-            <span key={idx}>T{idx + 1}</span>
           ))}
         </div>
       </div>
