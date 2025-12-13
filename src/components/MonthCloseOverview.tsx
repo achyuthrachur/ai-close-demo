@@ -19,8 +19,13 @@ export const MonthCloseOverview = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<string>(accrualPolicy.currentPeriod);
   const periodDates = useMemo(() => allDates.filter((d) => d.startsWith(selectedPeriod)), [allDates, selectedPeriod]);
   const candidates = useMemo(() => buildAccrualCandidates(selectedPeriod), [selectedPeriod]);
-  const { progress } = useCloseProgress();
-  const overview = useMemo(() => computeCloseOverview(periodDates, candidates, progress), [periodDates, candidates, progress]);
+  const { progress, getAllDecisions } = useCloseProgress();
+  const decisions = getAllDecisions();
+  const periodFlags = useMemo(() => flagEntriesForPeriod(selectedPeriod), [selectedPeriod]);
+  const overview = useMemo(
+    () => computeCloseOverview(periodDates, candidates, progress, periodFlags.flaggedEntries, decisions),
+    [periodDates, candidates, progress, periodFlags.flaggedEntries, decisions]
+  );
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [trend, setTrend] = useState(() => buildTrendAcrossMonths(months, progress));
@@ -28,21 +33,31 @@ export const MonthCloseOverview = () => {
     () =>
       months.map((period) => {
         const flags = flagEntriesForPeriod(period);
+        const totalEntries = flags.flaggedEntries.length;
+        const flagged = flags.flaggedEntries.filter((f) => f.flags.length).length;
+        const highRisk = flags.flaggedEntries.filter((f) => f.risk === 'HIGH').length;
+        const decided = flags.flaggedEntries.filter((f) => {
+          const status = decisions.get(f.entry.jeId);
+          return f.flags.length && (status === 'ESCALATED' || status === 'IGNORED');
+        }).length;
         return {
           period,
-          totalEntries: flags.summary.totalEntries,
-          flagged: flags.summary.flaggedCounts.DUPLICATE + flags.summary.flaggedCounts.UNUSUAL_AMOUNT + flags.summary.flaggedCounts.REVERSAL_ISSUE,
-          highRisk: flags.summary.highRiskCount,
+          totalEntries,
+          flagged,
+          highRisk,
+          remediation: flagged ? Math.round((decided / flagged) * 100) : 100,
+          readiness: totalEntries ? Math.round(((totalEntries - flagged) / totalEntries) * 100) : 0,
         };
       }),
-    [months]
+    [months, decisions]
   );
 
   function buildTrendAcrossMonths(periods: string[], state: typeof progress) {
     return periods.map((period) => {
       const dates = allDates.filter((d) => d.startsWith(period));
       const cands = buildAccrualCandidates(period);
-      const ov = computeCloseOverview(dates, cands, state);
+      const flags = flagEntriesForPeriod(period);
+      const ov = computeCloseOverview(dates, cands, state, flags.flaggedEntries, decisions);
       return { period, score: ov.readinessScore };
     });
   }
@@ -109,23 +124,15 @@ export const MonthCloseOverview = () => {
           secondary={`${overview.je.aiExplainedDays} days with AI narratives`}
         />
         <MetricCard
-          title="AP accruals"
-          primary={`${overview.accruals.withAiMemo}/${overview.accruals.expectedMissing} accruals memoed`}
-          secondary={`${overview.accruals.totalVendors} vendors analyzed`}
+          title="Readiness (clean JEs)"
+          primary={`${overview.readinessScore}%`}
+          secondary="Clean/unflagged entries as % of total"
         />
-        <div className="glass rounded-xl p-4 border border-border/60 flex flex-col gap-2">
-          <div className="text-xs uppercase tracking-wide text-muted">Readiness score</div>
-          <div className="text-3xl font-semibold">{overview.readinessScore}%</div>
-          <div className="w-full bg-border/40 h-2 rounded-full overflow-hidden">
-            <div
-              className="h-2 bg-accent-strong rounded-full"
-              style={{ width: `${overview.readinessScore}%` }}
-            />
-          </div>
-          <div className="text-xs text-muted">
-            Weighted blend of JE review (55%) and accrual handling (45%). Deterministic and reproducible.
-          </div>
-        </div>
+        <MetricCard
+          title="Remediation (flagged resolved)"
+          primary={`${overview.remediationScore}%`}
+          secondary="Flagged entries escalated or ignored"
+        />
       </div>
 
       <div className="glass rounded-xl p-4 border border-border/60 mt-4">
@@ -161,7 +168,7 @@ export const MonthCloseOverview = () => {
                 );
               })}
             </div>
-            <div className="mt-6 grid md:grid-cols-2 gap-4">
+            <div className="mt-6 grid md:grid-cols-3 gap-4">
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted mb-1">JE volume vs flagged</div>
                 {monthlyStats.length === 0 ? (
@@ -206,6 +213,25 @@ export const MonthCloseOverview = () => {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-wide text-muted mb-1">Remediation % (flagged resolved)</div>
+                {monthlyStats.length === 0 ? (
+                  <p className="text-sm text-muted">No data available.</p>
+                ) : (
+                  <div className="flex items-end gap-3 h-32 border border-border/60 rounded-lg p-3">
+                    {monthlyStats.map((stat) => (
+                      <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
+                        <div
+                          className="w-8 rounded-t-md bg-emerald-400"
+                          style={{ height: `${Math.min(100, Math.max(10, stat.remediation))}%` }}
+                          title={`${stat.remediation}% of flagged resolved`}
+                        />
+                        <div className="text-xs text-muted text-center mt-1">{stat.period}</div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

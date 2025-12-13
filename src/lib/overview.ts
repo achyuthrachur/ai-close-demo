@@ -1,4 +1,4 @@
-import { AccrualCandidate } from '@/types';
+import { AccrualCandidate, FlaggedEntry } from '@/types';
 
 export type CloseProgress = {
   reviewedDates: Set<string>;
@@ -18,6 +18,7 @@ export type CloseOverview = {
     withAiMemo: number;
   };
   readinessScore: number;
+  remediationScore: number;
   openDays: string[];
   openVendors: string[];
 };
@@ -25,7 +26,9 @@ export type CloseOverview = {
 export const computeCloseOverview = (
   periodDates: string[],
   candidates: AccrualCandidate[],
-  progress: CloseProgress
+  progress: CloseProgress,
+  flaggedEntries: FlaggedEntry[],
+  decisions: Map<string, string>
 ): CloseOverview => {
   const totalDays = periodDates.length;
   const reviewedDays = periodDates.filter((d) => progress.reviewedDates.has(d)).length;
@@ -34,9 +37,16 @@ export const computeCloseOverview = (
   const expectedMissing = candidates.filter((c) => c.expectedMissing).map((c) => c.vendorId);
   const withAiMemo = expectedMissing.filter((id) => progress.accrualExplainedVendors.has(id)).length;
 
-  const jeCompletion = totalDays ? reviewedDays / totalDays : 0;
-  const accrualCompletion = expectedMissing.length ? withAiMemo / expectedMissing.length : 1;
-  const readinessScore = Math.round(((jeCompletion * 0.55 + accrualCompletion * 0.45) * 100));
+  const totalEntries = flaggedEntries.length;
+  const flaggedCount = flaggedEntries.filter((f) => f.flags.length).length;
+  const cleanCount = totalEntries - flaggedCount;
+  const decidedCount = flaggedEntries.filter((f) => {
+    const status = decisions.get(f.entry.jeId);
+    return f.flags.length && (status === 'ESCALATED' || status === 'IGNORED');
+  }).length;
+
+  const readinessScore = totalEntries ? Math.round((cleanCount / totalEntries) * 100) : 0;
+  const remediationScore = flaggedCount ? Math.round((decidedCount / flaggedCount) * 100) : 100;
 
   const openDays = periodDates.filter((d) => !progress.reviewedDates.has(d));
   const openVendors = expectedMissing.filter((id) => !progress.accrualExplainedVendors.has(id));
@@ -49,6 +59,7 @@ export const computeCloseOverview = (
       withAiMemo,
     },
     readinessScore,
+    remediationScore,
     openDays,
     openVendors,
   };

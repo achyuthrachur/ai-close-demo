@@ -20,6 +20,7 @@ export const ApAccrualSection = () => {
   const [selectedVendorId, setSelectedVendorId] = useState<string>(candidates[0]?.vendorId ?? '');
   const [loadingVendor, setLoadingVendor] = useState<string | null>(null);
   const [aiMemos, setAiMemos] = useState<Record<string, MemoResponse>>({});
+  const [accrualPosted, setAccrualPosted] = useState<Record<string, boolean>>({});
   const { markVendorExplained } = useCloseProgress();
 
   const visible = filterMissing ? candidates.filter((c) => c.expectedMissing) : candidates;
@@ -195,6 +196,15 @@ export const ApAccrualSection = () => {
                     </ul>
                   </div>
                 )}
+                <div className="mt-3 flex gap-2 items-center">
+                  <button
+                    onClick={() => setAccrualPosted((prev) => ({ ...prev, [selected.vendorId]: true }))}
+                    className="px-3 py-2 rounded border border-border text-sm font-semibold hover:bg-border/60"
+                  >
+                    {accrualPosted[selected.vendorId] ? 'Accrual JE Added' : 'Add accrual JE'}
+                  </button>
+                  {accrualPosted[selected.vendorId] && <span className="text-xs text-emerald-600">Recorded for demo</span>}
+                </div>
               </div>
             )}
           </div>

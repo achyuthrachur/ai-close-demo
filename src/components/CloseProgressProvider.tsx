@@ -19,6 +19,7 @@ type CloseProgressContext = {
   setJeAiResponse: (key: string, value: StoredAiResponse) => void;
   getDecision: (jeId: string) => JeDecision;
   setDecision: (jeId: string, decision: JeDecision) => void;
+  getAllDecisions: () => Map<string, JeDecision>;
 };
 
 const Context = createContext<CloseProgressContext | undefined>(undefined);
@@ -50,6 +51,7 @@ export const CloseProgressProvider = ({ children }: { children: React.ReactNode 
           next.set(jeId, decision);
           return next;
         }),
+      getAllDecisions: () => jeDecisions,
     }),
     [reviewedDates, jeExplainedDates, accrualExplainedVendors, jeAiCache, jeDecisions]
   );
