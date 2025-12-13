@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { accrualPolicy } from '@/data/config';
 import { buildAccrualCandidates } from '@/lib/accruals';
 import { computeCloseOverview } from '@/lib/overview';
-import { uniquePostingDates } from '@/lib/journal';
+import { flagEntriesForPeriod, uniquePostingDates } from '@/lib/journal';
 import { useCloseProgress } from './CloseProgressProvider';
 
 export const MonthCloseOverview = () => {
@@ -24,6 +24,19 @@ export const MonthCloseOverview = () => {
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [trend, setTrend] = useState(() => buildTrendAcrossMonths(months, progress));
+  const monthlyStats = useMemo(
+    () =>
+      months.map((period) => {
+        const flags = flagEntriesForPeriod(period);
+        return {
+          period,
+          totalEntries: flags.summary.totalEntries,
+          flagged: flags.summary.flaggedCounts.DUPLICATE + flags.summary.flaggedCounts.UNUSUAL_AMOUNT + flags.summary.flaggedCounts.REVERSAL_ISSUE,
+          highRisk: flags.summary.highRiskCount,
+        };
+      }),
+    [months]
+  );
 
   function buildTrendAcrossMonths(periods: string[], state: typeof progress) {
     return periods.map((period) => {
@@ -119,7 +132,7 @@ export const MonthCloseOverview = () => {
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs uppercase tracking-wide text-muted">Monthly trend</div>
-            <div className="text-sm text-muted">Readiness trend across recent months.</div>
+            <div className="text-sm text-muted">Readiness and volume trends across recent months.</div>
           </div>
           <button
             onClick={refreshVisuals}
@@ -131,21 +144,60 @@ export const MonthCloseOverview = () => {
         {trend.length === 0 ? (
           <p className="text-sm text-muted mt-3">Trend will appear after data is loaded.</p>
         ) : (
-          <div className="mt-4 flex items-end gap-3 h-36">
-            {trend.map((point, idx) => {
-              const height = Math.min(100, Math.max(10, point.score));
-              return (
-                <div key={idx} className="flex-1">
-                  <div
-                    className="w-full rounded-t-md bg-accent-strong"
-                    style={{ height: `${height}%` }}
-                    title={`${point.period}: ${point.score}% readiness`}
-                  />
-                  <div className="text-xs text-center text-muted mt-1">{point.period}</div>
+          <>
+            <div className="mt-4 flex items-end gap-3 h-36">
+              {trend.map((point, idx) => {
+                const height = Math.min(100, Math.max(10, point.score));
+                return (
+                  <div key={idx} className="flex-1">
+                    <div
+                      className="w-full rounded-t-md bg-accent-strong"
+                      style={{ height: `${height}%` }}
+                      title={`${point.period}: ${point.score}% readiness`}
+                    />
+                    <div className="text-xs text-center text-muted mt-1">{point.period}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-6 grid md:grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs uppercase tracking-wide text-muted mb-1">JE volume vs flagged</div>
+                <div className="flex items-end gap-3 h-36">
+                  {monthlyStats.map((stat) => (
+                    <div key={stat.period} className="flex-1 space-y-1">
+                      <div className="w-full bg-border/50 rounded-full h-1.5">
+                        <div
+                          className="bg-accent-strong h-1.5 rounded-full"
+                          style={{ width: `${Math.min(100, (stat.flagged / Math.max(1, stat.totalEntries)) * 100)}%` }}
+                          title={`${stat.flagged} flagged of ${stat.totalEntries}`}
+                        />
+                      </div>
+                      <div className="text-xs text-muted text-center">
+                        {stat.period}
+                        <div className="text-[11px]">{stat.totalEntries} entries / {stat.flagged} flagged</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-wide text-muted mb-1">High-risk JEs</div>
+                <div className="flex items-end gap-3 h-36">
+                  {monthlyStats.map((stat) => (
+                    <div key={stat.period} className="flex-1">
+                      <div
+                        className="w-full rounded-t-md bg-rose-400"
+                        style={{ height: `${Math.min(100, Math.max(8, (stat.highRisk / Math.max(1, stat.totalEntries)) * 120))}%` }}
+                        title={`${stat.highRisk} high-risk of ${stat.totalEntries}`}
+                      />
+                      <div className="text-xs text-muted text-center mt-1">{stat.period}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
 

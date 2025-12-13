@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { callChatModel } from '@/lib/ai';
-import { FlaggedEntry } from '@/types';
+import { FlaggedEntry, JEFlag } from '@/types';
 
 const cleanJson = (text: string) => {
   const stripped = text.trim().replace(/```json|```/g, '');
@@ -13,18 +13,40 @@ export async function POST(req: Request) {
   const date: string = body.date ?? '';
   const summary = body.summary;
 
-  const payload = flagged.map((f) => {
-    const net = f.entry.debit - f.entry.credit;
-    return {
-      jeId: f.entry.jeId,
-      account: f.entry.account,
-      costCenter: f.entry.costCenter,
-      amount: net,
-      flags: f.flags,
-      description: f.entry.description,
-      context: f.context,
-    };
-  });
+  const categories: Record<
+    JEFlag,
+    {
+      jeIds: string[];
+      entries: {
+        jeId: string;
+        account: string;
+        amount: number;
+        description: string;
+        context: FlaggedEntry['context'];
+      }[];
+    }
+  > = {
+    DUPLICATE: { jeIds: [], entries: [] },
+    UNUSUAL_AMOUNT: { jeIds: [], entries: [] },
+    REVERSAL_ISSUE: { jeIds: [], entries: [] },
+  };
+
+  flagged
+    .filter((f) => f.flags.length)
+    .forEach((f) => {
+      const net = f.entry.debit - f.entry.credit;
+      f.flags.forEach((flag) => {
+        const bucket = categories[flag];
+        bucket.jeIds.push(f.entry.jeId);
+        bucket.entries.push({
+          jeId: f.entry.jeId,
+          account: f.entry.account,
+          amount: net,
+          description: f.entry.description,
+          context: f.context,
+        });
+      });
+    });
 
   const prompt = `
 You are assisting a controller reviewing journal entry flags for ${date}.
@@ -36,51 +58,68 @@ Daily context:
 - Flagged counts: ${JSON.stringify(summary?.flaggedCounts ?? {})}
 - High risk: ${summary?.highRiskCount ?? 0}
 
-Flagged entries JSON:
-${JSON.stringify(payload, null, 2)}
+Grouped flagged entries JSON by category:
+${JSON.stringify(
+  Object.entries(categories).map(([flag, info]) => ({
+    flag,
+    jeIds: info.jeIds,
+    entries: info.entries,
+  })),
+  null,
+  2
+)}
 
 Respond in JSON with the shape:
 {
   "narrative": "overall 2-3 sentence narrative summarizing the risks and themes",
-  "items": [
-    { "jeId": "...", "summary": "1 sentence theme", "details": "1-2 sentences describing why flagged", "nextSteps": ["short remediation step 1", "step 2"] }
+  "categories": [
+    { "flag": "DUPLICATE", "summary": "theme", "details": "1-2 sentences describing why flagged and referencing JE IDs", "nextSteps": ["short remediation step 1", "step 2"], "jeIds": ["...","..."] }
   ]
 }
 `;
 
 let narrative = '';
-let items: { jeId: string; summary: string; details: string; nextSteps?: string[] }[] = [];
+let categoriesResponse:
+  | {
+      flag: JEFlag;
+      summary: string;
+      details: string;
+      nextSteps?: string[];
+      jeIds?: string[];
+    }[]
+  | undefined;
 
-  try {
-    const aiText = await callChatModel(prompt);
-    const parsed = cleanJson(aiText);
-    narrative = parsed.narrative ?? '';
-    items = parsed.items ?? [];
-  } catch (err) {
-    console.error('AI explanation error', err);
-    narrative = 'AI unavailable. Deterministic flags remain accurate.';
-  }
+try {
+  const aiText = await callChatModel(prompt);
+  const parsed = cleanJson(aiText);
+  narrative = parsed.narrative ?? '';
+  categoriesResponse = parsed.categories;
+} catch (err) {
+  console.error('AI explanation error', err);
+  narrative = 'AI unavailable. Deterministic flags remain accurate.';
+}
 
-  // Deterministic fallback if parsing fails or AI returns empty.
-  if (!items.length) {
-    items = flagged
-      .filter((f) => f.flags.length)
-      .map((f) => ({
-        jeId: f.entry.jeId,
-        summary: `${f.flags.join(', ')} on ${f.entry.account}`,
-        details: `Flagged deterministically due to ${f.flags.join(' & ')}. Amount: ${Math.abs(
-          f.entry.debit - f.entry.credit
-        )}.`,
-        nextSteps: ['Review supporting docs', 'Confirm approval and reversal timing'],
-      }));
-  }
+// Deterministic fallback if parsing fails or AI returns empty.
+if (!categoriesResponse?.length) {
+  categoriesResponse = (Object.keys(categories) as JEFlag[])
+    .map((flag) => ({
+      flag,
+      summary: `${flag} issues`,
+      details: `Entries: ${categories[flag].jeIds.join(', ') || 'none'}.`,
+      nextSteps: ['Review supporting docs', 'Confirm approval and reversal timing'],
+      jeIds: categories[flag].jeIds,
+    }))
+    .filter((c) => c.jeIds?.length);
+}
 
   return NextResponse.json({
     dailyNarrative: narrative,
-    explanations: items.map((item) => ({
-      jeId: item.jeId,
-      summary: item.summary,
-      text: `${item.details}${item.nextSteps?.length ? `\nNext steps: ${item.nextSteps.join('; ')}` : ''}`,
+    explanations: categoriesResponse?.map((cat) => ({
+      jeId: cat.flag,
+      summary: `${cat.flag}: ${cat.summary}`,
+      text: `${cat.details}${cat.jeIds?.length ? ` | IDs: ${cat.jeIds.join(', ')}` : ''}${
+        cat.nextSteps?.length ? `\nNext steps: ${cat.nextSteps.join('; ')}` : ''
+      }`,
     })),
   });
 }

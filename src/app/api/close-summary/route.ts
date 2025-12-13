@@ -11,8 +11,8 @@ export async function POST(req: Request) {
   const monthlyTrend: { period: string; score: number }[] = body.monthlyTrend ?? [];
 
   const prompt = `
-Generate a concise controller-friendly month-end close summary. Use only provided numbers; no new figures.
-Respond in JSON: { "summary": "3-4 sentence narrative with key observations and next steps, mentioning month-to-month trends" }.
+Generate a controller-ready month-end close summary. Use only provided numbers; no new figures.
+Respond in JSON: { "summary": "3-4 short paragraphs: 1) overall status and volume/context; 2) JE and accrual trends with month-to-month comparisons; 3) key open items; 4) concrete remediation steps" }.
 
 Period: ${period}
 Readiness score: ${overview.readinessScore}%
