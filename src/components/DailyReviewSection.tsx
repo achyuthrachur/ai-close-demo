@@ -11,6 +11,7 @@ type AiExplanation = {
   jeId: string;
   text: string;
   summary: string;
+  jeIds?: string[];
 };
 
 type AiResponse = {
@@ -359,6 +360,13 @@ export const DailyReviewSection = () => {
               <div className="text-xs uppercase tracking-wide text-accent-strong mb-1">{exp.jeId}</div>
               <div className="font-semibold">{exp.summary}</div>
               <p className="text-sm text-muted mt-2 whitespace-pre-line">{exp.text}</p>
+              {!!exp.jeIds?.length && (
+                <ul className="list-disc list-inside text-sm text-foreground/90 mt-2">
+                  {exp.jeIds.map((id) => (
+                    <li key={id}>{id}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           ))}
         </div>

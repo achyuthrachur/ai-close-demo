@@ -47,7 +47,14 @@ export async function POST(req: Request) {
           description: f.entry.description,
           context: f.context,
           decision,
-        } as any);
+        } as {
+          jeId: string;
+          account: string;
+          amount: number;
+          description: string;
+          context: FlaggedEntry['context'];
+          decision: string;
+        });
       });
     });
 
@@ -120,9 +127,8 @@ if (!categoriesResponse?.length) {
     explanations: categoriesResponse?.map((cat) => ({
       jeId: cat.flag,
       summary: `${cat.flag}: ${cat.summary}`,
-      text: `${cat.details}${cat.jeIds?.length ? ` | IDs: ${cat.jeIds.join(', ')}` : ''}${
-        cat.nextSteps?.length ? `\nNext steps: ${cat.nextSteps.join('; ')}` : ''
-      }`,
+      text: `${cat.details}${cat.nextSteps?.length ? `\nNext steps: ${cat.nextSteps.join('; ')}` : ''}`,
+      jeIds: cat.jeIds ?? [],
     })),
   });
 }

@@ -145,18 +145,18 @@ export const MonthCloseOverview = () => {
           <p className="text-sm text-muted mt-3">Trend will appear after data is loaded.</p>
         ) : (
           <>
-            <div className="mt-4 flex items-end gap-3 h-36">
+            <div className="mt-4 flex items-end gap-3 h-40 relative border border-border/60 rounded-lg p-3">
               {trend.map((point, idx) => {
                 const maxScore = Math.max(...trend.map((t) => t.score), 1);
                 const height = Math.min(100, Math.max(10, (point.score / maxScore) * 100));
                 return (
-                  <div key={idx} className="flex-1">
+                  <div key={idx} className="flex-1 flex flex-col justify-end items-center">
                     <div
-                      className="w-full rounded-t-md bg-accent-strong"
+                      className="w-6 rounded-t-md bg-accent-strong"
                       style={{ height: `${height}%` }}
                       title={`${point.period}: ${point.score}% readiness`}
                     />
-                    <div className="text-xs text-center text-muted mt-1">{point.period}</div>
+                    <div className="text-xs text-center text-muted mt-2">{point.period}</div>
                   </div>
                 );
               })}
@@ -167,19 +167,19 @@ export const MonthCloseOverview = () => {
                 {monthlyStats.length === 0 ? (
                   <p className="text-sm text-muted">No data available.</p>
                 ) : (
-                  <div className="flex items-end gap-3 h-36">
+                  <div className="flex items-end gap-3 h-32 border border-border/60 rounded-lg p-3">
                     {monthlyStats.map((stat) => (
-                      <div key={stat.period} className="flex-1 space-y-1">
-                        <div className="w-full bg-border/50 rounded-full h-2">
+                      <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
+                        <div className="w-8 bg-border/50 rounded h-20 relative overflow-hidden">
                           <div
-                            className="bg-accent-strong h-2 rounded-full"
-                            style={{ width: `${Math.min(100, (stat.flagged / Math.max(1, stat.totalEntries)) * 100)}%` }}
+                            className="bg-accent-strong absolute bottom-0 left-0 right-0"
+                            style={{ height: `${Math.min(100, Math.max(5, (stat.flagged / Math.max(1, stat.totalEntries)) * 100))}%` }}
                             title={`${stat.flagged} flagged of ${stat.totalEntries}`}
                           />
                         </div>
                         <div className="text-xs text-muted text-center">
                           {stat.period}
-                          <div className="text-[11px]">{stat.totalEntries} entries / {stat.flagged} flagged</div>
+                          <div className="text-[11px]">{stat.totalEntries} / {stat.flagged} flagged</div>
                         </div>
                       </div>
                     ))}
@@ -191,14 +191,14 @@ export const MonthCloseOverview = () => {
                 {monthlyStats.length === 0 ? (
                   <p className="text-sm text-muted">No data available.</p>
                 ) : (
-                  <div className="flex items-end gap-3 h-36">
+                  <div className="flex items-end gap-3 h-32 border border-border/60 rounded-lg p-3">
                     {monthlyStats.map((stat) => {
                       const maxHigh = Math.max(...monthlyStats.map((s) => s.highRisk), 1);
                       const height = Math.min(100, Math.max(10, (stat.highRisk / maxHigh) * 100));
                       return (
-                        <div key={stat.period} className="flex-1">
+                        <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
                           <div
-                            className="w-full rounded-t-md bg-rose-400"
+                            className="w-8 rounded-t-md bg-rose-400"
                             style={{ height: `${height}%` }}
                             title={`${stat.highRisk} high-risk of ${stat.totalEntries}`}
                           />
