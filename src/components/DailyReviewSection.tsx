@@ -42,9 +42,10 @@ export const DailyReviewSection = () => {
   }, [dates]);
 
   const latestDate = dates[dates.length - 1] ?? '';
-  const [selected, setSelected] = useState<string>(latestDate);
-  const [mode, setMode] = useState<'DAY' | 'WEEK' | 'MONTH'>('DAY');
-  const [filter, setFilter] = useState<'ALL' | 'FLAGGED' | 'HIGH'>('FLAGGED');
+  const defaultWeek = weeks[weeks.length - 1] ?? latestDate;
+  const [selected, setSelected] = useState<string>(defaultWeek);
+  const [mode, setMode] = useState<'DAY' | 'WEEK' | 'MONTH'>('WEEK');
+  const [filter, setFilter] = useState<'ALL' | 'FLAGGED' | 'HIGH'>('ALL');
   const [page, setPage] = useState(0);
   const [aiResponse, setAiResponse] = useState<AiResponse | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
