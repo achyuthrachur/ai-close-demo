@@ -128,18 +128,25 @@ export const MonthCloseOverview = () => {
             Refresh visuals
           </button>
         </div>
-        <div className="mt-4 flex items-end gap-3 h-36">
-          {trend.map((point, idx) => (
-            <div key={idx} className="flex-1">
-              <div
-                className="w-full rounded-t-md bg-accent-strong"
-                style={{ height: `${point.score}%` }}
-                title={`${point.period}: ${point.score}% readiness`}
-              />
-              <div className="text-xs text-center text-muted mt-1">{point.period}</div>
-            </div>
-          ))}
-        </div>
+        {trend.length === 0 ? (
+          <p className="text-sm text-muted mt-3">Trend will appear after data is loaded.</p>
+        ) : (
+          <div className="mt-4 flex items-end gap-3 h-36">
+            {trend.map((point, idx) => {
+              const height = Math.min(100, Math.max(10, point.score));
+              return (
+                <div key={idx} className="flex-1">
+                  <div
+                    className="w-full rounded-t-md bg-accent-strong"
+                    style={{ height: `${height}%` }}
+                    title={`${point.period}: ${point.score}% readiness`}
+                  />
+                  <div className="text-xs text-center text-muted mt-1">{point.period}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-4 mt-6">
