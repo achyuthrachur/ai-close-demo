@@ -29,9 +29,9 @@ export default function Home() {
         <header className="glass rounded-3xl p-8 border border-border/80 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 text-sm text-muted">
-              <span className="chip bg-emerald-500/10 text-emerald-700">Deterministic logic</span>
-              <span className="chip bg-accent-strong/15 text-accent-strong">AI narratives</span>
-              <span className="chip bg-border/50 text-muted">Synthetic JSON data</span>
+              <span className="chip bg-emerald-100 text-emerald-800 border-emerald-300">Deterministic logic</span>
+              <span className="chip bg-sky-100 text-sky-800 border-sky-300">AI narratives</span>
+              <span className="chip bg-slate-200 text-slate-800 border-slate-300">Synthetic JSON data</span>
             </div>
             <h1 className="text-4xl font-semibold mt-4">AI-augmented close co-pilot</h1>
             <p className="text-lg text-muted mt-2 max-w-3xl">

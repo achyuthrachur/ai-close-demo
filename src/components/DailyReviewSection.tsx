@@ -20,9 +20,9 @@ type AiResponse = {
 };
 
 const riskColor = (risk: string) => {
-  if (risk === 'HIGH') return 'text-rose-300 bg-rose-500/10';
-  if (risk === 'MEDIUM') return 'text-amber-200 bg-amber-500/10';
-  return 'text-emerald-200 bg-emerald-500/10';
+  if (risk === 'HIGH') return 'text-rose-800 bg-rose-100 border-rose-300';
+  if (risk === 'MEDIUM') return 'text-amber-800 bg-amber-100 border-amber-300';
+  return 'text-emerald-800 bg-emerald-100 border-emerald-300';
 };
 
 export const DailyReviewSection = () => {

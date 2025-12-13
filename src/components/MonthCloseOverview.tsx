@@ -129,7 +129,7 @@ export const MonthCloseOverview = () => {
           ) : (
             <div className="flex flex-wrap gap-2">
               {overview.openDays.map((d) => (
-                <span key={d} className="chip bg-amber-500/10 text-amber-100">
+                <span key={d} className="chip bg-amber-100 text-amber-800 border-amber-300">
                   {d}
                 </span>
               ))}
@@ -145,7 +145,7 @@ export const MonthCloseOverview = () => {
               {overview.openVendors.map((id) => {
                 const vendor = candidates.find((c) => c.vendorId === id);
                 return (
-                  <span key={id} className="chip bg-amber-500/10 text-amber-100">
+                  <span key={id} className="chip bg-amber-100 text-amber-800 border-amber-300">
                     {vendor?.vendorName ?? id}
                   </span>
                 );
