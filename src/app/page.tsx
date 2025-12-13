@@ -8,7 +8,7 @@ import { TopTabs } from '@/components/TopTabs';
 import { CloseProgressProvider } from '@/components/CloseProgressProvider';
 
 const tabs = [
-  { key: 'je', label: 'Daily JE Review', description: 'Deterministic flags + AI explanations' },
+  { key: 'je', label: 'JE Review', description: 'Deterministic flags + AI explanations' },
   { key: 'ap', label: 'AP Accrual Co-pilot', description: 'Predict missing invoices & memos' },
   { key: 'overview', label: 'Month-End Close Overview', description: 'Readiness score & summary' },
 ];
