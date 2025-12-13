@@ -6,7 +6,7 @@ import { buildAccrualCandidates } from '@/lib/accruals';
 import { computeCloseOverview } from '@/lib/overview';
 import { flagEntriesForPeriod, uniquePostingDates } from '@/lib/journal';
 import { useCloseProgress } from './CloseProgressProvider';
-import { BarBlock } from './BarBlock';
+import { StackedBar } from './StackedBar';
 
 export const MonthCloseOverview = () => {
   const allDates = useMemo(() => uniquePostingDates(), []);
@@ -140,7 +140,7 @@ export const MonthCloseOverview = () => {
         <MetricCard
           title="Remediation (flagged resolved)"
           primary={`${overview.remediationScore}%`}
-          secondary="Flagged entries escalated or ignored"
+          secondary="Flagged entries escalated or remediated"
         />
       </div>
 
@@ -162,18 +162,18 @@ export const MonthCloseOverview = () => {
         ) : (
           <>
             <div className="mt-4 grid md:grid-cols-2 gap-4">
-              <div className="flex items-end gap-3 h-56 relative border border-border/60 rounded-lg p-4">
+              <div className="flex items-end gap-6 h-64 relative border border-border/60 rounded-lg p-6">
                 {trend.map((point, idx) => {
-                  const maxReady = Math.max(...trend.map((t) => t.readiness), 1);
-                  const height = Math.max(12, (point.readiness / maxReady) * 100);
+                  const maxReady = 100;
+                  const heightPx = Math.max(40, (point.readiness / maxReady) * 200);
                   return (
                     <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-2">
                       <div
-                        className="w-10 rounded-t-md bg-accent-strong"
-                        style={{ height: `${height}%` }}
+                        className="w-12 rounded-t-md bg-accent-strong shadow"
+                        style={{ height: `${heightPx}px` }}
                         title={`${point.period}: ${point.readiness}% readiness`}
                       >
-                        <div className="text-[11px] text-slate-900 font-semibold text-center leading-none pt-1">
+                        <div className="text-[11px] text-slate-900 font-semibold text-center leading-none pt-2">
                           {point.readiness}%
                         </div>
                       </div>
@@ -182,19 +182,20 @@ export const MonthCloseOverview = () => {
                   );
                 })}
               </div>
-              <div className="flex items-end gap-3 h-56 relative border border-border/60 rounded-lg p-4">
+              <div className="flex items-end gap-6 h-64 relative border border-border/60 rounded-lg p-6">
                 {monthlyStats.map((stat, idx) => {
-                  const maxFlag = Math.max(
-                    ...monthlyStats.map((s) => Math.max(s.perFlag.DUPLICATE, s.perFlag.UNUSUAL_AMOUNT, s.perFlag.REVERSAL_ISSUE)),
+                  const maxTotal = Math.max(
+                    ...monthlyStats.map((s) => s.perFlag.DUPLICATE + s.perFlag.UNUSUAL_AMOUNT + s.perFlag.REVERSAL_ISSUE),
                     1
                   );
                   return (
                     <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-2">
-                      <div className="w-12 flex flex-col gap-1">
-                        <BarBlock value={stat.perFlag.DUPLICATE} max={maxFlag} color="bg-amber-400" label="Dup" />
-                        <BarBlock value={stat.perFlag.UNUSUAL_AMOUNT} max={maxFlag} color="bg-rose-400" label="Unusual" />
-                        <BarBlock value={stat.perFlag.REVERSAL_ISSUE} max={maxFlag} color="bg-purple-400" label="Reversal" />
-                      </div>
+                      <StackedBar
+                        dup={stat.perFlag.DUPLICATE}
+                        unusual={stat.perFlag.UNUSUAL_AMOUNT}
+                        reversal={stat.perFlag.REVERSAL_ISSUE}
+                        maxTotal={maxTotal}
+                      />
                       <div className="text-xs text-center text-muted">{stat.period}</div>
                     </div>
                   );
