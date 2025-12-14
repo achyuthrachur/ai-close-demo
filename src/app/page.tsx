@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { DailyReviewSection } from '@/components/DailyReviewSection';
 import { ApAccrualSection } from '@/components/ApAccrualSection';
@@ -16,7 +16,7 @@ const tabs = [
 
 type TabKey = (typeof tabs)[number]['key'];
 
-export default function Home() {
+const HomeShell = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialTab = (searchParams?.get('tab') as TabKey) ?? 'je';
@@ -95,5 +95,13 @@ export default function Home() {
         )}
       </main>
     </CloseProgressProvider>
+  );
+};
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="p-6 text-muted">Loading dashboard...</div>}>
+      <HomeShell />
+    </Suspense>
   );
 }
