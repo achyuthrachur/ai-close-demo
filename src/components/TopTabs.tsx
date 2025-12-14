@@ -1,18 +1,18 @@
 'use client';
 
-type Tab = {
-  key: string;
+type Tab<T extends string = string> = {
+  key: T;
   label: string;
   description?: string;
 };
 
-type Props = {
-  tabs: ReadonlyArray<Tab>;
-  active: string;
-  onChange: (key: string) => void;
+type Props<T extends string = string> = {
+  tabs: ReadonlyArray<Tab<T>>;
+  active: T;
+  onChange: (key: T) => void;
 };
 
-export const TopTabs = ({ tabs, active, onChange }: Props) => (
+export const TopTabs = <T extends string = string>({ tabs, active, onChange }: Props<T>) => (
   <div className="flex flex-wrap gap-3">
     {tabs.map((tab) => {
       const isActive = tab.key === active;
