@@ -12,18 +12,20 @@ const tabs = [
   { key: 'je', label: 'JE Review', description: 'Deterministic flags + AI explanations' },
   { key: 'ap', label: 'AP Accrual Co-pilot', description: 'Predict missing invoices & memos' },
   { key: 'overview', label: 'Month-End Close Overview', description: 'Readiness score & summary' },
-];
+] as const;
+
+type TabKey = (typeof tabs)[number]['key'];
 
 export default function Home() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initialTab = (searchParams?.get('tab') as 'je' | 'ap' | 'overview') ?? 'je';
-  const [active, setActive] = useState(initialTab);
+  const initialTab = (searchParams?.get('tab') as TabKey) ?? 'je';
+  const [active, setActive] = useState<TabKey>(initialTab);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [showData, setShowData] = useState(false);
 
   useEffect(() => {
-    const nextTab = (searchParams?.get('tab') as 'je' | 'ap' | 'overview') ?? 'je';
+    const nextTab = (searchParams?.get('tab') as TabKey) ?? 'je';
     setActive(nextTab);
   }, [searchParams]);
 
@@ -32,7 +34,7 @@ export default function Home() {
     root.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
   }, [theme]);
 
-  const onTabChange = (key: string) => {
+  const onTabChange = (key: TabKey) => {
     setActive(key);
     const params = new URLSearchParams(searchParams?.toString());
     params.set('tab', key);
