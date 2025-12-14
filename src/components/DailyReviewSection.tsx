@@ -86,11 +86,13 @@ export const DailyReviewSection = () => {
 
   // When URL params change (e.g., clicking from overview), align state to the query.
   useEffect(() => {
-    const nextMode = (searchParams?.get('jeMode') as 'DAY' | 'WEEK' | 'MONTH' | null) ?? null;
-    const nextDate = searchParams?.get('jeDate') ?? null;
+    const spString = searchParams?.toString() ?? '';
+    const qp = new URLSearchParams(spString);
+    const nextMode = (qp.get('jeMode') as 'DAY' | 'WEEK' | 'MONTH' | null) ?? null;
+    const nextDate = qp.get('jeDate');
     if (nextMode && nextMode !== mode) setMode(nextMode);
     if (nextDate && nextDate !== selected) setSelected(nextDate);
-  }, [searchParams, mode, selected]);
+  }, [searchParams?.toString(), mode, selected]);
 
   // Persist selection in the URL so it survives tab switches until full refresh.
   useEffect(() => {
