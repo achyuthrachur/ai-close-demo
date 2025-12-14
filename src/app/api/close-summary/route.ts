@@ -3,6 +3,13 @@ import { callChatModel } from '@/lib/ai';
 import { CloseOverview } from '@/lib/overview';
 
 const cleanJson = (text: string) => text.trim().replace(/```json|```/g, '');
+const tryParse = (text: string) => {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+};
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -48,8 +55,8 @@ Current period remediation %: ${periodStats?.remediation ?? 'n/a'}; readiness %:
   try {
     const aiText = await callChatModel(prompt);
     const cleaned = cleanJson(aiText);
-    const parsed = JSON.parse(cleaned);
-    summary = parsed.summary ?? cleaned;
+    const parsed = tryParse(cleaned);
+    summary = parsed && typeof parsed.summary === 'string' ? parsed.summary : cleaned;
   } catch (err) {
     console.error('AI close summary error', err);
     summary = 'AI unavailable. Use deterministic readiness score shown on the dashboard.';
