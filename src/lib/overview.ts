@@ -48,7 +48,14 @@ export const computeCloseOverview = (
   const readinessScore = totalEntries ? Math.round((cleanCount / totalEntries) * 100) : 0;
   const remediationScore = flaggedCount ? Math.round((decidedCount / flaggedCount) * 100) : 100;
 
-  const openDays = periodDates.filter((d) => !progress.reviewedDates.has(d));
+  const resolvedStatuses = new Set(['ESCALATED', 'IGNORED', 'REMEDIATED']);
+  const openDays = Array.from(new Set(flaggedEntries.map((f) => f.entry.postingDate)))
+    .filter((d) => periodDates.includes(d))
+    .filter((d) => {
+      const flaggedOnDay = flaggedEntries.filter((f) => f.entry.postingDate === d && f.flags.length);
+      return flaggedOnDay.some((f) => !resolvedStatuses.has(decisions.get(f.entry.jeId) ?? 'PENDING'));
+    })
+    .sort();
   const openVendors = expectedMissing.filter((id) => !progress.accrualExplainedVendors.has(id));
 
   return {

@@ -121,7 +121,9 @@ export const ApAccrualSection = () => {
                 </td>
                 <td className="py-3 pr-3">{row.confidence}%</td>
                 <td className="py-3 pr-3">
-                  {row.expectedMissing ? (
+                  {accrualPosted[row.vendorId] ? (
+                    <span className="chip bg-emerald-100 text-emerald-800 border-emerald-300">Accrual JE added</span>
+                  ) : row.expectedMissing ? (
                     <span className="chip bg-amber-100 text-amber-800 border-amber-300">Missing</span>
                   ) : (
                     <span className="chip bg-emerald-100 text-emerald-800 border-emerald-300">On track</span>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { journalEntries } from '@/data/journalEntries';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { flagEntriesForDate, flagEntriesForPeriod, flagEntriesForRange, uniquePostingDates } from '@/lib/journal';
@@ -26,6 +27,7 @@ const riskColor = (risk: string) => {
 };
 
 export const DailyReviewSection = () => {
+  const searchParams = useSearchParams();
   const dates = useMemo(() => uniquePostingDates(), []);
   const months = useMemo(() => Array.from(new Set(journalEntries.map((je) => je.period))).sort(), []);
   const weeks = useMemo(() => {
@@ -43,8 +45,10 @@ export const DailyReviewSection = () => {
 
   const latestDate = dates[dates.length - 1] ?? '';
   const defaultWeek = weeks[weeks.length - 1] ?? latestDate;
-  const [selected, setSelected] = useState<string>(defaultWeek);
-  const [mode, setMode] = useState<'DAY' | 'WEEK' | 'MONTH'>('WEEK');
+  const paramMode = (searchParams?.get('jeMode') as 'DAY' | 'WEEK' | 'MONTH' | null) ?? null;
+  const paramDate = searchParams?.get('jeDate') ?? null;
+  const [selected, setSelected] = useState<string>(paramDate ?? defaultWeek);
+  const [mode, setMode] = useState<'DAY' | 'WEEK' | 'MONTH'>(paramMode ?? 'WEEK');
   const [filter, setFilter] = useState<'ALL' | 'FLAGGED' | 'HIGH'>('ALL');
   const [page, setPage] = useState(0);
   const [aiResponse, setAiResponse] = useState<AiResponse | null>(null);
@@ -180,7 +184,7 @@ export const DailyReviewSection = () => {
   const optionsForMode = mode === 'DAY' ? dates : mode === 'WEEK' ? weeks : months;
 
   return (
-    <section className="glass rounded-2xl p-6 border border-border/80">
+    <section id="je-review" className="glass rounded-2xl p-6 border border-border/80">
       <div className="flex flex-wrap items-end gap-4 justify-between">
         <div>
           <p className="text-sm text-muted uppercase tracking-wide">JE Review</p>
@@ -308,10 +312,16 @@ export const DailyReviewSection = () => {
                         className={`chip ${
                           row.decision === 'ESCALATED'
                             ? 'bg-rose-100 text-rose-800 border-rose-300'
+                            : row.decision === 'REMEDIATED'
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                             : 'bg-slate-200 text-slate-800 border-slate-300'
                         }`}
                       >
-                        {row.decision === 'ESCALATED' ? 'Escalated' : 'Ignored'}
+                        {row.decision === 'ESCALATED'
+                          ? 'Escalated'
+                          : row.decision === 'REMEDIATED'
+                          ? 'Remediated'
+                          : 'Ignored'}
                       </span>
                     )}
                   </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { accrualPolicy } from '@/data/config';
 import { buildAccrualCandidates } from '@/lib/accruals';
 import { computeCloseOverview } from '@/lib/overview';
@@ -39,7 +40,7 @@ export const MonthCloseOverview = () => {
         const highRisk = flags.flaggedEntries.filter((f) => f.risk === 'HIGH').length;
         const decided = flags.flaggedEntries.filter((f) => {
           const status = decisions.get(f.entry.jeId);
-          return f.flags.length && (status === 'ESCALATED' || status === 'IGNORED' || status === 'REMEDIATED');
+          return f.flags.length && (status === 'ESCALATED' || status === 'REMEDIATED');
         }).length;
         const perFlag = flags.flaggedEntries.reduce(
           (acc, f) => {
@@ -162,44 +163,56 @@ export const MonthCloseOverview = () => {
         ) : (
           <>
             <div className="mt-4 grid md:grid-cols-2 gap-4">
-              <div className="flex items-end gap-6 h-64 relative border border-border/60 rounded-lg p-6">
-                {trend.map((point, idx) => {
-                  const maxReady = 100;
-                  const heightPx = Math.max(40, (point.readiness / maxReady) * 200);
-                  return (
-                    <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-2">
-                      <div
-                        className="w-12 rounded-t-md bg-accent-strong shadow"
-                        style={{ height: `${heightPx}px` }}
-                        title={`${point.period}: ${point.readiness}% readiness`}
-                      >
-                        <div className="text-[11px] text-slate-900 font-semibold text-center leading-none pt-2">
-                          {point.readiness}%
+              <div className="flex flex-col gap-3 border border-border/60 rounded-lg p-4">
+                <div className="text-sm font-semibold">Readiness by month</div>
+                <div className="flex items-end gap-6 h-72">
+                  {trend.map((point, idx) => {
+                    const maxReady = 100;
+                    const heightPx = Math.max(80, (point.readiness / maxReady) * 240);
+                    return (
+                      <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-2">
+                        <div
+                          className="w-12 rounded-t-md bg-accent-strong shadow"
+                          style={{ height: `${heightPx}px` }}
+                          title={`${point.period}: ${point.readiness}% readiness`}
+                        >
+                          <div className="text-[11px] text-slate-900 font-semibold text-center leading-none pt-2">
+                            {point.readiness}%
+                          </div>
                         </div>
+                        <div className="text-xs text-center text-muted">{point.period}</div>
                       </div>
-                      <div className="text-xs text-center text-muted">{point.period}</div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-              <div className="flex items-end gap-6 h-64 relative border border-border/60 rounded-lg p-6">
-                {monthlyStats.map((stat, idx) => {
-                  const maxTotal = Math.max(
-                    ...monthlyStats.map((s) => s.perFlag.DUPLICATE + s.perFlag.UNUSUAL_AMOUNT + s.perFlag.REVERSAL_ISSUE),
-                    1
-                  );
-                  return (
-                    <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-2">
-                      <StackedBar
-                        dup={stat.perFlag.DUPLICATE}
-                        unusual={stat.perFlag.UNUSUAL_AMOUNT}
-                        reversal={stat.perFlag.REVERSAL_ISSUE}
-                        maxTotal={maxTotal}
-                      />
-                      <div className="text-xs text-center text-muted">{stat.period}</div>
-                    </div>
-                  );
-                })}
+              <div className="flex flex-col gap-3 border border-border/60 rounded-lg p-4">
+                <div className="text-sm font-semibold">Flag mix by month</div>
+                <div className="flex items-end gap-6 h-72">
+                  {monthlyStats.map((stat, idx) => {
+                    const maxTotal = Math.max(
+                      ...monthlyStats.map((s) => s.perFlag.DUPLICATE + s.perFlag.UNUSUAL_AMOUNT + s.perFlag.REVERSAL_ISSUE),
+                      1
+                    );
+                    return (
+                      <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-2">
+                        <StackedBar
+                          dup={stat.perFlag.DUPLICATE}
+                          unusual={stat.perFlag.UNUSUAL_AMOUNT}
+                          reversal={stat.perFlag.REVERSAL_ISSUE}
+                          maxTotal={maxTotal}
+                          label={`Dup ${stat.perFlag.DUPLICATE} / Unusual ${stat.perFlag.UNUSUAL_AMOUNT} / Reversal ${stat.perFlag.REVERSAL_ISSUE}`}
+                        />
+                        <div className="text-xs text-center text-muted">{stat.period}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-4 text-xs text-muted mt-2">
+                  <div className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-400 inline-block" /> Duplicate</div>
+                  <div className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-rose-400 inline-block" /> Unusual amount</div>
+                  <div className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-purple-400 inline-block" /> Reversal issue</div>
+                </div>
               </div>
             </div>
             <div className="mt-6 grid md:grid-cols-3 gap-4">
@@ -208,22 +221,29 @@ export const MonthCloseOverview = () => {
                 {monthlyStats.length === 0 ? (
                   <p className="text-sm text-muted">No data available.</p>
                 ) : (
-                  <div className="flex items-end gap-3 h-36 border border-border/60 rounded-lg p-3">
-                    {monthlyStats.map((stat) => (
-                      <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
-                        <div className="w-8 bg-border/50 rounded h-24 relative overflow-hidden">
-                          <div
-                            className="bg-accent-strong absolute bottom-0 left-0 right-0"
-                            style={{ height: `${Math.min(100, Math.max(8, (stat.flagged / Math.max(1, stat.totalEntries)) * 100))}%` }}
-                            title={`${stat.flagged} flagged of ${stat.totalEntries}`}
-                          />
-                        </div>
-                        <div className="text-xs text-muted text-center">
-                          {stat.period}
-                          <div className="text-[11px]">{stat.totalEntries} / {stat.flagged} flagged</div>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="flex items-end gap-4 h-44 border border-border/60 rounded-lg p-4">
+                    {(() => {
+                      const maxTotal = Math.max(...monthlyStats.map((s) => s.totalEntries), 1);
+                      return monthlyStats.map((stat) => {
+                        const barTotal = Math.max(60, (stat.totalEntries / maxTotal) * 160);
+                        const barFlagged = Math.max(8, (stat.flagged / Math.max(1, stat.totalEntries)) * barTotal);
+                        return (
+                          <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
+                            <div className="w-10 bg-border/40 rounded relative overflow-hidden" style={{ height: `${barTotal}px` }}>
+                              <div
+                                className="bg-accent-strong absolute bottom-0 left-0 right-0"
+                                style={{ height: `${barFlagged}px` }}
+                                title={`${stat.flagged} flagged of ${stat.totalEntries}`}
+                              />
+                            </div>
+                            <div className="text-xs text-muted text-center">
+                              {stat.period}
+                              <div className="text-[11px]">{stat.totalEntries} / {stat.flagged} flagged</div>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 )}
               </div>
@@ -232,21 +252,27 @@ export const MonthCloseOverview = () => {
                 {monthlyStats.length === 0 ? (
                   <p className="text-sm text-muted">No data available.</p>
                 ) : (
-                  <div className="flex items-end gap-3 h-36 border border-border/60 rounded-lg p-3">
-                    {monthlyStats.map((stat) => {
+                  <div className="flex items-end gap-3 h-40 border border-border/60 rounded-lg p-3">
+                    {(() => {
                       const maxHigh = Math.max(...monthlyStats.map((s) => s.highRisk), 1);
-                      const height = Math.min(100, Math.max(8, (stat.highRisk / maxHigh) * 100));
-                      return (
-                        <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
-                          <div
-                            className="w-8 rounded-t-md bg-rose-400"
-                            style={{ height: `${height}%` }}
-                            title={`${stat.highRisk} high-risk of ${stat.totalEntries}`}
-                          />
-                          <div className="text-xs text-muted text-center mt-1">{stat.period}</div>
-                        </div>
-                      );
-                    })}
+                      return monthlyStats.map((stat) => {
+                        const heightPx = Math.max(12, (stat.highRisk / Math.max(1, maxHigh)) * 160);
+                        return (
+                          <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
+                            <div
+                              className="w-8 rounded-t-md bg-rose-400"
+                              style={{ height: `${heightPx}px` }}
+                              title={`${stat.highRisk} high-risk of ${stat.totalEntries}`}
+                            >
+                              <div className="text-[10px] text-white font-semibold text-center leading-none pt-1">
+                                {stat.highRisk}
+                              </div>
+                            </div>
+                            <div className="text-xs text-muted text-center mt-1">{stat.period}</div>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 )}
               </div>
@@ -255,17 +281,24 @@ export const MonthCloseOverview = () => {
                 {monthlyStats.length === 0 ? (
                   <p className="text-sm text-muted">No data available.</p>
                 ) : (
-                  <div className="flex items-end gap-3 h-36 border border-border/60 rounded-lg p-3">
-                    {monthlyStats.map((stat) => (
-                      <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
-                        <div
-                          className="w-8 rounded-t-md bg-emerald-400"
-                          style={{ height: `${Math.min(100, Math.max(8, stat.remediation))}%` }}
-                          title={`${stat.remediation}% of flagged resolved`}
-                        />
-                        <div className="text-xs text-muted text-center mt-1">{stat.period}</div>
-                      </div>
-                    ))}
+                  <div className="flex items-end gap-3 h-40 border border-border/60 rounded-lg p-3">
+                    {monthlyStats.map((stat) => {
+                      const heightPx = Math.max(12, (stat.remediation / 100) * 160);
+                      return (
+                        <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
+                          <div
+                            className="w-8 rounded-t-md bg-emerald-400"
+                            style={{ height: `${heightPx}px` }}
+                            title={`${stat.remediation}% of flagged resolved`}
+                          >
+                            <div className="text-[10px] text-emerald-950 font-semibold text-center leading-none pt-1">
+                              {stat.remediation}%
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted text-center mt-1">{stat.period}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -282,9 +315,13 @@ export const MonthCloseOverview = () => {
           ) : (
             <div className="flex flex-wrap gap-2">
               {overview.openDays.map((d) => (
-                <span key={d} className="chip bg-amber-100 text-amber-800 border-amber-300">
+                <Link
+                  key={d}
+                  href={`/?jeMode=DAY&jeDate=${d}#je-review`}
+                  className="chip bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200"
+                >
                   {d}
-                </span>
+                </Link>
               ))}
             </div>
           )}
