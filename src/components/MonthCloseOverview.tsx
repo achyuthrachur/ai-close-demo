@@ -340,7 +340,7 @@ export const MonthCloseOverview = () => {
                   onClick={() => goToJeDay(d)}
                   className="chip bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200"
                 >
-                  {d}
+                  {new Date(d).toLocaleDateString('en-US')}
                 </button>
               ))}
             </div>
