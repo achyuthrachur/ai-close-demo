@@ -32,15 +32,21 @@ export const computeCloseOverview = (
 ): CloseOverview => {
   const totalDays = periodDates.length;
   const resolvedStatuses = new Set(['ESCALATED', 'IGNORED', 'REMEDIATED']);
-  const reviewedDays = periodDates.filter((d) => {
-    if (progress.reviewedDates.has(d)) return true;
-    const entries = flaggedEntries.filter((f) => f.entry.postingDate === d);
-    if (!entries.length) return false;
-    const unresolved = entries.filter(
-      (f) => f.flags.length && !resolvedStatuses.has(decisions.get(f.entry.jeId) ?? 'PENDING')
-    );
-    return unresolved.length === 0;
-  }).length;
+  const unresolvedAny = flaggedEntries.filter(
+    (f) => f.flags.length && !resolvedStatuses.has(decisions.get(f.entry.jeId) ?? 'PENDING')
+  );
+  const reviewedDays =
+    unresolvedAny.length === 0
+      ? totalDays
+      : periodDates.filter((d) => {
+          if (progress.reviewedDates.has(d)) return true;
+          const entries = flaggedEntries.filter((f) => f.entry.postingDate === d);
+          if (!entries.length) return false;
+          const unresolved = entries.filter(
+            (f) => f.flags.length && !resolvedStatuses.has(decisions.get(f.entry.jeId) ?? 'PENDING')
+          );
+          return unresolved.length === 0;
+        }).length;
   const aiExplainedDays = periodDates.filter((d) => progress.jeExplainedDates.has(d)).length;
 
   const expectedMissing = candidates.filter((c) => c.expectedMissing).map((c) => c.vendorId);
