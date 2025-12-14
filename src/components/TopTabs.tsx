@@ -7,7 +7,7 @@ type Tab = {
 };
 
 type Props = {
-  tabs: Tab[];
+  tabs: ReadonlyArray<Tab>;
   active: string;
   onChange: (key: string) => void;
 };
