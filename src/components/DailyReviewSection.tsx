@@ -92,7 +92,7 @@ export const DailyReviewSection = () => {
     const nextDate = qp.get('jeDate');
     if (nextMode && nextMode !== mode) setMode(nextMode);
     if (nextDate && nextDate !== selected) setSelected(nextDate);
-  }, [searchParams?.toString(), mode, selected]);
+  }, [searchParams?.toString()]);
 
   // Persist selection in the URL so it survives tab switches until full refresh.
   useEffect(() => {
