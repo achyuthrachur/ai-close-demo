@@ -95,7 +95,7 @@ export const MonthCloseOverview = () => {
   const refreshVisuals = () => setTrend(buildTrendAcrossMonths(months, progress));
 
   const goToJeDay = (date: string) => {
-    const url = `/?jeMode=DAY&jeDate=${date}#je-review`;
+    const url = `/?tab=je&jeMode=DAY&jeDate=${date}#je-review`;
     router.push(url);
     requestAnimationFrame(() => {
       const el = document.getElementById('je-review');

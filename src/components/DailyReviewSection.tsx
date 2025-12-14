@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { journalEntries } from '@/data/journalEntries';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { flagEntriesForDate, flagEntriesForPeriod, flagEntriesForRange, uniquePostingDates } from '@/lib/journal';
@@ -28,6 +28,7 @@ const riskColor = (risk: string) => {
 
 export const DailyReviewSection = () => {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const dates = useMemo(() => uniquePostingDates(), []);
   const months = useMemo(() => Array.from(new Set(journalEntries.map((je) => je.period))).sort(), []);
   const weeks = useMemo(() => {
@@ -45,10 +46,11 @@ export const DailyReviewSection = () => {
 
   const latestDate = dates[dates.length - 1] ?? '';
   const defaultWeek = weeks[weeks.length - 1] ?? latestDate;
+  const defaultMonth = months[months.length - 1] ?? latestDate;
   const paramMode = (searchParams?.get('jeMode') as 'DAY' | 'WEEK' | 'MONTH' | null) ?? null;
   const paramDate = searchParams?.get('jeDate') ?? null;
-  const [selected, setSelected] = useState<string>(paramDate ?? defaultWeek);
-  const [mode, setMode] = useState<'DAY' | 'WEEK' | 'MONTH'>(paramMode ?? 'WEEK');
+  const [selected, setSelected] = useState<string>(paramDate ?? defaultMonth);
+  const [mode, setMode] = useState<'DAY' | 'WEEK' | 'MONTH'>(paramMode ?? 'MONTH');
   const [filter, setFilter] = useState<'ALL' | 'FLAGGED' | 'HIGH'>('ALL');
   const [page, setPage] = useState(0);
   const [aiResponse, setAiResponse] = useState<AiResponse | null>(null);
@@ -81,6 +83,16 @@ export const DailyReviewSection = () => {
       setSelected(opts[opts.length - 1]);
     }
   }, [mode, dates, weeks, months, selected]);
+
+  // Persist selection in the URL so it survives tab switches until full refresh.
+  useEffect(() => {
+    if (!selected) return;
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('tab', 'je');
+    params.set('jeMode', mode);
+    params.set('jeDate', selected);
+    router.push(`/?${params.toString()}#je-review`);
+  }, [mode, selected, router, searchParams]);
 
   useEffect(() => {
     if (mode === 'DAY' && selected) markDayReviewed(selected);

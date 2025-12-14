@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { DailyReviewSection } from '@/components/DailyReviewSection';
 import { ApAccrualSection } from '@/components/ApAccrualSection';
 import { MonthCloseOverview } from '@/components/MonthCloseOverview';
@@ -14,14 +15,29 @@ const tabs = [
 ];
 
 export default function Home() {
-  const [active, setActive] = useState('je');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const initialTab = (searchParams?.get('tab') as 'je' | 'ap' | 'overview') ?? 'je';
+  const [active, setActive] = useState(initialTab);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [showData, setShowData] = useState(false);
+
+  useEffect(() => {
+    const nextTab = (searchParams?.get('tab') as 'je' | 'ap' | 'overview') ?? 'je';
+    setActive(nextTab);
+  }, [searchParams]);
 
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
   }, [theme]);
+
+  const onTabChange = (key: string) => {
+    setActive(key);
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('tab', key);
+    router.push(`/?${params.toString()}${window.location.hash}`);
+  };
 
   return (
     <CloseProgressProvider>
@@ -69,7 +85,7 @@ export default function Home() {
           </div>
         ) : (
           <>
-            <TopTabs tabs={tabs} active={active} onChange={setActive} />
+            <TopTabs tabs={tabs} active={active} onChange={onTabChange} />
             {active === 'je' && <DailyReviewSection />}
             {active === 'ap' && <ApAccrualSection />}
             {active === 'overview' && <MonthCloseOverview />}
