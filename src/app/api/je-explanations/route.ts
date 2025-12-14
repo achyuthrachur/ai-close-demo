@@ -13,6 +13,13 @@ export async function POST(req: Request) {
   const date: string = body.date ?? '';
   const summary = body.summary;
   const decisions: { jeId: string; status: string }[] = body.decisions ?? [];
+  const decisionCounts = decisions.reduce(
+    (acc, d) => {
+      acc[d.status] = (acc[d.status] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   const categories: Record<
     JEFlag,
@@ -39,22 +46,25 @@ export async function POST(req: Request) {
       const decision = decisions.find((d) => d.jeId === f.entry.jeId)?.status ?? 'PENDING';
       f.flags.forEach((flag) => {
         const bucket = categories[flag];
-        bucket.jeIds.push(f.entry.jeId);
-        bucket.entries.push({
-          jeId: f.entry.jeId,
-          account: f.entry.account,
-          amount: net,
-          description: f.entry.description,
-          context: f.context,
-          decision,
-        } as {
-          jeId: string;
-          account: string;
-          amount: number;
-          description: string;
-          context: FlaggedEntry['context'];
-          decision: string;
-        });
+        // Exclude fully remediated items from the "currently affected" list.
+        if (decision !== 'REMEDIATED') {
+          bucket.jeIds.push(f.entry.jeId);
+          bucket.entries.push({
+            jeId: f.entry.jeId,
+            account: f.entry.account,
+            amount: net,
+            description: f.entry.description,
+            context: f.context,
+            decision,
+          } as {
+            jeId: string;
+            account: string;
+            amount: number;
+            description: string;
+            context: FlaggedEntry['context'];
+            decision: string;
+          });
+        }
       });
     });
 
@@ -67,6 +77,7 @@ Daily context:
 - Total entries: ${summary?.totalEntries ?? 'n/a'}
 - Flagged counts: ${JSON.stringify(summary?.flaggedCounts ?? {})}
 - High risk: ${summary?.highRiskCount ?? 0}
+- Decisions so far (all statuses): ${JSON.stringify(decisionCounts)}
 
 Grouped flagged entries JSON by category:
 ${JSON.stringify(

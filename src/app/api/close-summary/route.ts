@@ -9,10 +9,23 @@ export async function POST(req: Request) {
   const overview: CloseOverview = body.overview;
   const period: string = body.period;
   const monthlyTrend: { period: string; score: number }[] = body.monthlyTrend ?? [];
+  const periodStats = body.periodStats as
+    | {
+        period: string;
+        totalEntries: number;
+        flagged: number;
+        highRisk: number;
+        remediation: number;
+        readiness: number;
+        perFlag: { DUPLICATE: number; UNUSUAL_AMOUNT: number; REVERSAL_ISSUE: number };
+      }
+    | undefined;
 
   const prompt = `
 Generate a controller-ready month-end close summary. Use only provided numbers; no new figures.
-Respond in JSON: { "summary": "3-4 short paragraphs: 1) overall status and volume/context; 2) JE and accrual trends with month-to-month comparisons; 3) key open items; 4) concrete remediation steps" }.
+Respond in JSON: {
+  "summary": "3-4 paragraphs: (1) overall status + JE volume/flag mix for the period, (2) analysis of JE anomalies and month-to-month trend, (3) accruals status and gaps, (4) concrete, prescriptive remediation steps (who/what/when) tailored to the gaps."
+}
 
 Period: ${period}
 Readiness score: ${overview.readinessScore}%
@@ -22,6 +35,9 @@ Accruals: ${overview.accruals.withAiMemo}/${overview.accruals.expectedMissing} e
 Open JE days: ${overview.openDays.join(', ') || 'none'}
 Open vendors: ${overview.openVendors.join(', ') || 'none'}
 Monthly trend readiness: ${monthlyTrend.map((t) => `${t.period}:${t.score}%`).join(', ') || 'n/a'}
+Current period JE volume: ${periodStats?.totalEntries ?? 'n/a'} total, ${periodStats?.flagged ?? 'n/a'} flagged, ${periodStats?.highRisk ?? 'n/a'} high-risk.
+Flag breakdown: dup ${periodStats?.perFlag?.DUPLICATE ?? 'n/a'}, unusual ${periodStats?.perFlag?.UNUSUAL_AMOUNT ?? 'n/a'}, reversal ${periodStats?.perFlag?.REVERSAL_ISSUE ?? 'n/a'}.
+Current period remediation %: ${periodStats?.remediation ?? 'n/a'}; readiness %: ${periodStats?.readiness ?? 'n/a'}.
 `;
 
   let summary = '';

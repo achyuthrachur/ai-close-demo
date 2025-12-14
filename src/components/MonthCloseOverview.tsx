@@ -76,11 +76,17 @@ export const MonthCloseOverview = () => {
 
   const triggerSummary = async () => {
     setLoading(true);
+    const currentStats = monthlyStats.find((m) => m.period === selectedPeriod);
     try {
       const res = await fetch('/api/close-summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ overview, period: selectedPeriod, monthlyTrend: trend }),
+        body: JSON.stringify({
+          overview,
+          period: selectedPeriod,
+          monthlyTrend: trend,
+          periodStats: currentStats,
+        }),
       });
       const json = await res.json();
       setAiSummary(json.summary);
@@ -142,7 +148,6 @@ export const MonthCloseOverview = () => {
         <MetricCard
           title="JE review"
           primary={`${overview.je.reviewedDays}/${overview.je.totalDays} days reviewed`}
-          secondary={`${overview.je.aiExplainedDays} days with AI narratives`}
         />
         <MetricCard
           title="Readiness (clean JEs)"
@@ -369,10 +374,10 @@ export const MonthCloseOverview = () => {
   );
 };
 
-const MetricCard = ({ title, primary, secondary }: { title: string; primary: string; secondary: string }) => (
+const MetricCard = ({ title, primary, secondary }: { title: string; primary: string; secondary?: string }) => (
   <div className="glass rounded-xl p-4 border border-border/60">
     <div className="text-xs uppercase tracking-wide text-muted">{title}</div>
     <div className="text-xl font-semibold mt-1">{primary}</div>
-    <div className="text-sm text-muted mt-1">{secondary}</div>
+    {secondary && <div className="text-sm text-muted mt-1">{secondary}</div>}
   </div>
 );
