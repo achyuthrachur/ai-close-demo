@@ -23,6 +23,9 @@ const HomeShell = () => {
   const [active, setActive] = useState<TabKey>(initialTab);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [showData, setShowData] = useState(false);
+  // Track JE view defaults here for the "load demo data" action.
+  const defaultJeMode = 'MONTH';
+  const defaultJeDate = searchParams?.get('jeDate') ?? '';
 
   useEffect(() => {
     const nextTab = (searchParams?.get('tab') as TabKey) ?? 'je';
@@ -44,12 +47,10 @@ const HomeShell = () => {
   const loadDemoData = () => {
     setShowData(true);
     setActive('je');
-    setMode('MONTH');
-    setSelected(defaultMonth);
     const params = new URLSearchParams(searchParams?.toString());
     params.set('tab', 'je');
-    params.set('jeMode', 'MONTH');
-    params.set('jeDate', defaultMonth);
+    params.set('jeMode', defaultJeMode);
+    params.set('jeDate', defaultJeDate || ''); // keep current if present; DailyReviewSection will default to latest month
     router.push(`/?${params.toString()}`);
   };
 
