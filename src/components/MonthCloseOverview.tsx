@@ -182,19 +182,17 @@ export const MonthCloseOverview = () => {
                       const heightPx = Math.max(80, (point.readiness / maxReady) * 240);
                       return (
                         <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-2">
+                          <div className="text-[11px] font-semibold text-slate-900">{point.readiness}%</div>
                           <div
                             className="w-12 rounded-t-md bg-accent-strong shadow"
                             style={{ height: `${heightPx}px` }}
                             title={`${point.period}: ${point.readiness}% readiness`}
                           >
-                            <div className="text-[11px] text-white font-semibold text-center leading-none pt-2">
-                              {point.readiness}%
-                            </div>
                           </div>
                           <div className="text-xs text-center text-muted">{point.period}</div>
                         </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               </div>
               <div className="flex flex-col gap-3 border border-border/60 rounded-lg p-4">
@@ -278,14 +276,12 @@ export const MonthCloseOverview = () => {
                         );
                         return (
                           <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
+                            <div className="text-[11px] font-semibold text-slate-900 mb-1">{stat.highRisk}</div>
                             <div
                               className="w-8 rounded-t-md bg-rose-400"
                               style={{ height: `${heightPx}px` }}
                               title={`${stat.highRisk} high-risk of ${stat.totalEntries}`}
                             >
-                              <div className="text-[10px] text-white font-semibold text-center leading-none pt-1">
-                                {stat.highRisk}
-                              </div>
                             </div>
                             <div className="text-xs text-muted text-center mt-1">{stat.period}</div>
                           </div>
@@ -306,17 +302,15 @@ export const MonthCloseOverview = () => {
                       const heightPx = Math.min(maxBarHeight, Math.max(12, (stat.remediation / 100) * maxBarHeight));
                       return (
                         <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
+                          <div className="text-[11px] font-semibold text-slate-900 mb-1">{stat.remediation}%</div>
                           <div
-                          className="w-8 rounded-t-md bg-emerald-400"
-                          style={{ height: `${heightPx}px` }}
-                          title={`${stat.remediation}% of flagged resolved`}
-                        >
-                          <div className="text-[10px] text-white font-semibold text-center leading-none pt-1">
-                            {stat.remediation}%
+                            className="w-8 rounded-t-md bg-emerald-400"
+                            style={{ height: `${heightPx}px` }}
+                            title={`${stat.remediation}% of flagged resolved`}
+                          >
                           </div>
+                          <div className="text-xs text-muted text-center mt-1">{stat.period}</div>
                         </div>
-                        <div className="text-xs text-muted text-center mt-1">{stat.period}</div>
-                      </div>
                       );
                     })}
                   </div>

@@ -44,10 +44,12 @@ const HomeShell = () => {
   const loadDemoData = () => {
     setShowData(true);
     setActive('je');
+    setMode('MONTH');
+    setSelected(defaultMonth);
     const params = new URLSearchParams(searchParams?.toString());
     params.set('tab', 'je');
-    params.delete('jeMode');
-    params.delete('jeDate');
+    params.set('jeMode', 'MONTH');
+    params.set('jeDate', defaultMonth);
     router.push(`/?${params.toString()}`);
   };
 
