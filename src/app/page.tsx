@@ -41,6 +41,16 @@ const HomeShell = () => {
     router.push(`/?${params.toString()}${window.location.hash}`);
   };
 
+  const loadDemoData = () => {
+    setShowData(true);
+    setActive('je');
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('tab', 'je');
+    params.delete('jeMode');
+    params.delete('jeDate');
+    router.push(`/?${params.toString()}`);
+  };
+
   return (
     <CloseProgressProvider>
       <main className="w-full max-w-screen-2xl mx-auto py-10 px-4 md:px-8 space-y-8">
@@ -66,7 +76,7 @@ const HomeShell = () => {
             </button>
             {!showData && (
               <button
-                onClick={() => setShowData(true)}
+                onClick={loadDemoData}
                 className="px-4 py-2 rounded-lg bg-accent-strong text-white font-semibold shadow"
               >
                 Load demo data
@@ -79,7 +89,7 @@ const HomeShell = () => {
           <div className="glass rounded-3xl p-10 border border-border/80 text-center">
             <p className="text-lg text-muted">Data is hidden until you load it.</p>
             <button
-              onClick={() => setShowData(true)}
+              onClick={loadDemoData}
               className="mt-4 px-5 py-3 rounded-lg bg-accent-strong text-white font-semibold shadow"
             >
               Load Demo Data
