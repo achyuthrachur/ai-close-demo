@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { accrualPolicy } from '@/data/config';
 import { buildAccrualCandidates } from '@/lib/accruals';
 import { computeCloseOverview } from '@/lib/overview';
@@ -10,6 +11,7 @@ import { useCloseProgress } from './CloseProgressProvider';
 import { StackedBar } from './StackedBar';
 
 export const MonthCloseOverview = () => {
+  const router = useRouter();
   const allDates = useMemo(() => uniquePostingDates(), []);
   const months = useMemo(
     () =>
@@ -163,25 +165,25 @@ export const MonthCloseOverview = () => {
         ) : (
           <>
             <div className="mt-4 grid md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-3 border border-border/60 rounded-lg p-4">
-                <div className="text-sm font-semibold">Readiness by month</div>
-                <div className="flex items-end gap-6 h-72">
-                  {trend.map((point, idx) => {
-                    const maxReady = 100;
-                    const heightPx = Math.max(80, (point.readiness / maxReady) * 240);
-                    return (
-                      <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-2">
-                        <div
-                          className="w-12 rounded-t-md bg-accent-strong shadow"
-                          style={{ height: `${heightPx}px` }}
-                          title={`${point.period}: ${point.readiness}% readiness`}
-                        >
-                          <div className="text-[11px] text-slate-900 font-semibold text-center leading-none pt-2">
-                            {point.readiness}%
+                <div className="flex flex-col gap-3 border border-border/60 rounded-lg p-4">
+                  <div className="text-sm font-semibold">Readiness by month</div>
+                  <div className="flex items-end gap-6 h-72">
+                    {trend.map((point, idx) => {
+                      const maxReady = 100;
+                      const heightPx = Math.max(80, (point.readiness / maxReady) * 240);
+                      return (
+                        <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-2">
+                          <div
+                            className="w-12 rounded-t-md bg-accent-strong shadow"
+                            style={{ height: `${heightPx}px` }}
+                            title={`${point.period}: ${point.readiness}% readiness`}
+                          >
+                            <div className="text-[11px] text-white font-semibold text-center leading-none pt-2">
+                              {point.readiness}%
+                            </div>
                           </div>
+                          <div className="text-xs text-center text-muted">{point.period}</div>
                         </div>
-                        <div className="text-xs text-center text-muted">{point.period}</div>
-                      </div>
                     );
                   })}
                 </div>
@@ -201,7 +203,6 @@ export const MonthCloseOverview = () => {
                           unusual={stat.perFlag.UNUSUAL_AMOUNT}
                           reversal={stat.perFlag.REVERSAL_ISSUE}
                           maxTotal={maxTotal}
-                          label={`Dup ${stat.perFlag.DUPLICATE} / Unusual ${stat.perFlag.UNUSUAL_AMOUNT} / Reversal ${stat.perFlag.REVERSAL_ISSUE}`}
                         />
                         <div className="text-xs text-center text-muted">{stat.period}</div>
                       </div>
@@ -287,16 +288,16 @@ export const MonthCloseOverview = () => {
                       return (
                         <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
                           <div
-                            className="w-8 rounded-t-md bg-emerald-400"
-                            style={{ height: `${heightPx}px` }}
-                            title={`${stat.remediation}% of flagged resolved`}
-                          >
-                            <div className="text-[10px] text-emerald-950 font-semibold text-center leading-none pt-1">
-                              {stat.remediation}%
-                            </div>
+                          className="w-8 rounded-t-md bg-emerald-400"
+                          style={{ height: `${heightPx}px` }}
+                          title={`${stat.remediation}% of flagged resolved`}
+                        >
+                          <div className="text-[10px] text-white font-semibold text-center leading-none pt-1">
+                            {stat.remediation}%
                           </div>
-                          <div className="text-xs text-muted text-center mt-1">{stat.period}</div>
                         </div>
+                        <div className="text-xs text-muted text-center mt-1">{stat.period}</div>
+                      </div>
                       );
                     })}
                   </div>
@@ -315,13 +316,13 @@ export const MonthCloseOverview = () => {
           ) : (
             <div className="flex flex-wrap gap-2">
               {overview.openDays.map((d) => (
-                <Link
+                <button
                   key={d}
-                  href={`/?jeMode=DAY&jeDate=${d}#je-review`}
+                  onClick={() => router.push(`/?jeMode=DAY&jeDate=${d}#je-review`)}
                   className="chip bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200"
                 >
                   {d}
-                </Link>
+                </button>
               ))}
             </div>
           )}

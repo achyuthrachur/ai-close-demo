@@ -12,6 +12,7 @@ export const StackedBar = ({ dup, unusual, reversal, maxTotal, label }: Props) =
   const dupH = total ? Math.max(6, (dup / total) * height) : 0;
   const unH = total ? Math.max(6, (unusual / total) * height) : 0;
   const revH = total ? Math.max(6, (reversal / total) * height) : 0;
+  const caption = label ?? `Dup ${dup} · Unusual ${unusual} · Reversal ${reversal}`;
 
   return (
     <div className="flex flex-col items-center">
@@ -20,9 +21,7 @@ export const StackedBar = ({ dup, unusual, reversal, maxTotal, label }: Props) =
         <div className="w-full bg-rose-400" style={{ height: unH }} title={`Unusual: ${unusual}`} />
         <div className="w-full bg-purple-400" style={{ height: revH }} title={`Reversal: ${reversal}`} />
       </div>
-      <div className="text-[10px] text-muted mt-1 leading-none">
-        {label ? label : ''} Dup {dup} / Unusual {unusual} / Reversal {reversal}
-      </div>
+      <div className="text-[10px] text-muted mt-1 leading-none">{caption}</div>
     </div>
   );
 };

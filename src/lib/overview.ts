@@ -31,7 +31,16 @@ export const computeCloseOverview = (
   decisions: Map<string, string>
 ): CloseOverview => {
   const totalDays = periodDates.length;
-  const reviewedDays = periodDates.filter((d) => progress.reviewedDates.has(d)).length;
+  const resolvedStatuses = new Set(['ESCALATED', 'IGNORED', 'REMEDIATED']);
+  const reviewedDays = periodDates.filter((d) => {
+    if (progress.reviewedDates.has(d)) return true;
+    const entries = flaggedEntries.filter((f) => f.entry.postingDate === d);
+    if (!entries.length) return false;
+    const unresolved = entries.filter(
+      (f) => f.flags.length && !resolvedStatuses.has(decisions.get(f.entry.jeId) ?? 'PENDING')
+    );
+    return unresolved.length === 0;
+  }).length;
   const aiExplainedDays = periodDates.filter((d) => progress.jeExplainedDates.has(d)).length;
 
   const expectedMissing = candidates.filter((c) => c.expectedMissing).map((c) => c.vendorId);
@@ -47,8 +56,6 @@ export const computeCloseOverview = (
 
   const readinessScore = totalEntries ? Math.round((cleanCount / totalEntries) * 100) : 0;
   const remediationScore = flaggedCount ? Math.round((decidedCount / flaggedCount) * 100) : 100;
-
-  const resolvedStatuses = new Set(['ESCALATED', 'IGNORED', 'REMEDIATED']);
   const openDays = Array.from(new Set(flaggedEntries.map((f) => f.entry.postingDate)))
     .filter((d) => periodDates.includes(d))
     .filter((d) => {
