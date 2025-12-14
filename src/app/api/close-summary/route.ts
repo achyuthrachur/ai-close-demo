@@ -22,9 +22,13 @@ export async function POST(req: Request) {
     | undefined;
 
   const prompt = `
-Generate a controller-ready month-end close summary. Use only provided numbers; no new figures.
+Generate a controller-ready month-end close report. Use only provided numbers; no new figures.
 Respond in JSON: {
-  "summary": "3-4 paragraphs: (1) overall status + JE volume/flag mix for the period, (2) analysis of JE anomalies and month-to-month trend, (3) accruals status and gaps, (4) concrete, prescriptive remediation steps (who/what/when) tailored to the gaps."
+  "summary": "4 tight paragraphs that read like a report (not bullets): 
+    1) Overall status and readiness, citing JE volume and flag mix for the period. 
+    2) JE anomaly analysis with counts by category, how this compares to trend, and what it means operationally. 
+    3) Accruals status (expected missing invoices, memos completed) and specific implications. 
+    4) Prescriptive, time-bound remediation steps (who/what/when) to close gaps, tied to the metrics and open items."
 }
 
 Period: ${period}
