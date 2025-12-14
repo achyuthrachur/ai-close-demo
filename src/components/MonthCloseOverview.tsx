@@ -94,6 +94,15 @@ export const MonthCloseOverview = () => {
 
   const refreshVisuals = () => setTrend(buildTrendAcrossMonths(months, progress));
 
+  const goToJeDay = (date: string) => {
+    const url = `/?jeMode=DAY&jeDate=${date}#je-review`;
+    router.push(url);
+    requestAnimationFrame(() => {
+      const el = document.getElementById('je-review');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
   return (
     <section className="glass rounded-2xl p-6 border border-border/80">
       <div className="flex flex-wrap items-end gap-4 justify-between">
@@ -222,11 +231,16 @@ export const MonthCloseOverview = () => {
                 {monthlyStats.length === 0 ? (
                   <p className="text-sm text-muted">No data available.</p>
                 ) : (
-                  <div className="flex items-end gap-4 h-44 border border-border/60 rounded-lg p-4">
+                  <div className="flex items-end gap-4 h-48 border border-border/60 rounded-lg p-4 overflow-hidden">
                     {(() => {
                       const maxTotal = Math.max(...monthlyStats.map((s) => s.totalEntries), 1);
+                      const maxBarHeight = 120;
+                      const minBarHeight = 40;
                       return monthlyStats.map((stat) => {
-                        const barTotal = Math.max(60, (stat.totalEntries / maxTotal) * 160);
+                        const barTotal = Math.min(
+                          maxBarHeight,
+                          Math.max(minBarHeight, (stat.totalEntries / maxTotal) * maxBarHeight)
+                        );
                         const barFlagged = Math.max(8, (stat.flagged / Math.max(1, stat.totalEntries)) * barTotal);
                         return (
                           <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
@@ -253,11 +267,15 @@ export const MonthCloseOverview = () => {
                 {monthlyStats.length === 0 ? (
                   <p className="text-sm text-muted">No data available.</p>
                 ) : (
-                  <div className="flex items-end gap-3 h-40 border border-border/60 rounded-lg p-3">
+                  <div className="flex items-end gap-3 h-48 border border-border/60 rounded-lg p-3 overflow-hidden">
                     {(() => {
                       const maxHigh = Math.max(...monthlyStats.map((s) => s.highRisk), 1);
+                      const maxBarHeight = 120;
                       return monthlyStats.map((stat) => {
-                        const heightPx = Math.max(12, (stat.highRisk / Math.max(1, maxHigh)) * 160);
+                        const heightPx = Math.min(
+                          maxBarHeight,
+                          Math.max(12, (stat.highRisk / Math.max(1, maxHigh)) * maxBarHeight)
+                        );
                         return (
                           <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
                             <div
@@ -282,9 +300,10 @@ export const MonthCloseOverview = () => {
                 {monthlyStats.length === 0 ? (
                   <p className="text-sm text-muted">No data available.</p>
                 ) : (
-                  <div className="flex items-end gap-3 h-40 border border-border/60 rounded-lg p-3">
+                  <div className="flex items-end gap-3 h-48 border border-border/60 rounded-lg p-3 overflow-hidden">
                     {monthlyStats.map((stat) => {
-                      const heightPx = Math.max(12, (stat.remediation / 100) * 160);
+                      const maxBarHeight = 120;
+                      const heightPx = Math.min(maxBarHeight, Math.max(12, (stat.remediation / 100) * maxBarHeight));
                       return (
                         <div key={stat.period} className="flex-1 flex flex-col items-center justify-end gap-1">
                           <div
@@ -318,7 +337,7 @@ export const MonthCloseOverview = () => {
               {overview.openDays.map((d) => (
                 <button
                   key={d}
-                  onClick={() => router.push(`/?jeMode=DAY&jeDate=${d}#je-review`)}
+                  onClick={() => goToJeDay(d)}
                   className="chip bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200"
                 >
                   {d}
